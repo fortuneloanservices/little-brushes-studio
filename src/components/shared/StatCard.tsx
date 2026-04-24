@@ -18,21 +18,21 @@ export function StatCard({
     destructive: "bg-destructive-soft text-destructive",
   } as const;
   return (
-    <div className="card-soft p-5 flex flex-col gap-3 transition-all hover:-translate-y-0.5 hover:shadow-card animate-slide-up">
-      <div className="flex items-start justify-between">
-        <div className={cn("rounded-xl p-2.5", toneMap[tone])}>
-          <Icon className="w-5 h-5" strokeWidth={2.4} />
+    <div className="card-soft p-5 flex flex-col gap-4 transition-all hover:shadow-card">
+      <div className="flex items-center justify-between">
+        <div className={cn("rounded-md p-2", toneMap[tone])}>
+          <Icon className="w-4 h-4" strokeWidth={2} />
         </div>
         {trend && (
-          <span className={cn("inline-flex items-center gap-1 text-xs font-bold", trend.up ? "text-success" : "text-destructive")}>
+          <span className={cn("inline-flex items-center gap-1 text-xs font-medium tabular-nums", trend.up ? "text-success" : "text-destructive")}>
             {trend.up ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
             {trend.value}
           </span>
         )}
       </div>
       <div>
-        <div className="text-2xl font-display font-bold">{value}</div>
-        <div className="text-sm text-muted-foreground font-semibold">{label}</div>
+        <div className="text-[26px] font-display font-semibold tracking-tight tabular-nums">{value}</div>
+        <div className="text-[13px] text-muted-foreground font-medium mt-0.5">{label}</div>
       </div>
     </div>
   );
