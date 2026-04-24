@@ -1,11 +1,11 @@
 import { cn } from "@/lib/utils";
 
 const palette = [
-  "bg-primary text-primary-foreground",
-  "bg-secondary text-secondary-foreground",
-  "bg-accent text-accent-foreground",
-  "bg-success text-success-foreground",
-  "bg-info text-info-foreground",
+  "bg-primary/15 text-primary",
+  "bg-secondary/15 text-secondary",
+  "bg-success/15 text-success",
+  "bg-info/15 text-info",
+  "bg-accent/25 text-foreground",
 ];
 
 export function Avatar({ name, size = 36, className }: { name: string; size?: number; className?: string }) {
@@ -13,7 +13,7 @@ export function Avatar({ name, size = 36, className }: { name: string; size?: nu
   const idx = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % palette.length;
   return (
     <div
-      className={cn("rounded-full grid place-items-center font-bold shrink-0", palette[idx], className)}
+      className={cn("rounded-full grid place-items-center font-semibold shrink-0 ring-1 ring-border", palette[idx], className)}
       style={{ width: size, height: size, fontSize: size * 0.38 }}
     >
       {initials}

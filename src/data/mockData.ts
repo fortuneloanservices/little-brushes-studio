@@ -119,10 +119,12 @@ export const slotRequests = [
 ];
 
 // ---------- Leaves ----------
-export const leaveRequests = [
-  { id: "LV001", staff: "Sneha Kulkarni", type: "Casual",   from: format(addDays(today,2),"yyyy-MM-dd"), to: format(addDays(today,3),"yyyy-MM-dd"), reason: "Family function",  status: "Pending"  as const },
-  { id: "LV002", staff: "Mohit Bansal",   type: "Sick",     from: format(today,"yyyy-MM-dd"),            to: format(today,"yyyy-MM-dd"),             reason: "Fever",             status: "Pending"  as const },
-  { id: "LV003", staff: "Karan Singh",    type: "Personal", from: format(subDays(today,5),"yyyy-MM-dd"), to: format(subDays(today,4),"yyyy-MM-dd"), reason: "Personal work",     status: "Approved" as const },
+export type LeaveStatus = "Pending" | "Approved" | "Rejected";
+export type LeaveRequest = { id: string; staff: string; type: string; from: string; to: string; reason: string; status: LeaveStatus };
+export const leaveRequests: LeaveRequest[] = [
+  { id: "LV001", staff: "Sneha Kulkarni", type: "Casual",   from: format(addDays(today,2),"yyyy-MM-dd"), to: format(addDays(today,3),"yyyy-MM-dd"), reason: "Family function",  status: "Pending"  },
+  { id: "LV002", staff: "Mohit Bansal",   type: "Sick",     from: format(today,"yyyy-MM-dd"),            to: format(today,"yyyy-MM-dd"),             reason: "Fever",             status: "Pending"  },
+  { id: "LV003", staff: "Karan Singh",    type: "Personal", from: format(subDays(today,5),"yyyy-MM-dd"), to: format(subDays(today,4),"yyyy-MM-dd"), reason: "Personal work",     status: "Approved" },
 ];
 
 // ---------- Salary ----------

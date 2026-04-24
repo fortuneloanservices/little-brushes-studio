@@ -3,110 +3,111 @@
 @tailwind utilities;
 
 /* Little Brushes Art Academy — Design System
-   Playful kids art institute ERP. All colors HSL.
+   Modern, professional, refined. All colors HSL.
 */
 
 @layer base {
   :root {
-    --background: 33 100% 97%;          /* warm white #FFF8F0 */
-    --foreground: 285 52% 18%;          /* deep purple ink */
+    /* Neutral surface, slate ink — modern SaaS baseline */
+    --background: 220 24% 98%;
+    --foreground: 222 32% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 285 52% 18%;
+    --card-foreground: 222 32% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 285 52% 18%;
+    --popover-foreground: 222 32% 12%;
 
-    /* Brand: orange */
-    --primary: 16 100% 60%;             /* #FF6B35 */
+    /* Refined brand orange — slightly desaturated */
+    --primary: 18 88% 54%;
     --primary-foreground: 0 0% 100%;
-    --primary-soft: 16 100% 94%;
+    --primary-soft: 18 88% 96%;
 
-    /* Brand: purple */
-    --secondary: 287 51% 36%;           /* #7B2D8B */
+    /* Deep indigo-purple */
+    --secondary: 258 52% 32%;
     --secondary-foreground: 0 0% 100%;
-    --secondary-soft: 287 51% 94%;
+    --secondary-soft: 258 40% 96%;
 
-    /* Brand: yellow */
-    --accent: 49 100% 62%;              /* #FFD23F */
-    --accent-foreground: 285 52% 18%;
-    --accent-soft: 49 100% 94%;
+    /* Muted amber accent */
+    --accent: 42 92% 56%;
+    --accent-foreground: 222 32% 12%;
+    --accent-soft: 42 92% 96%;
 
-    /* Brand: teal */
-    --success: 161 95% 42%;             /* #06D6A0 */
+    /* Emerald success */
+    --success: 158 72% 38%;
     --success-foreground: 0 0% 100%;
-    --success-soft: 161 95% 92%;
+    --success-soft: 158 60% 95%;
 
-    --warning: 35 100% 55%;
+    --warning: 32 92% 52%;
     --warning-foreground: 0 0% 100%;
-    --warning-soft: 35 100% 94%;
+    --warning-soft: 32 92% 95%;
 
-    --destructive: 0 78% 60%;
+    --destructive: 0 72% 52%;
     --destructive-foreground: 0 0% 100%;
-    --destructive-soft: 0 78% 95%;
+    --destructive-soft: 0 72% 96%;
 
-    --info: 210 90% 55%;
+    --info: 214 84% 50%;
     --info-foreground: 0 0% 100%;
 
-    --muted: 33 30% 94%;
-    --muted-foreground: 285 15% 40%;
+    --muted: 220 20% 95%;
+    --muted-foreground: 220 12% 42%;
 
-    --border: 33 30% 88%;
-    --input: 33 30% 88%;
-    --ring: 16 100% 60%;
+    --border: 220 18% 90%;
+    --input: 220 18% 90%;
+    --ring: 18 88% 54%;
 
-    --radius: 1rem;
+    --radius: 0.625rem;
 
     /* Role accent palette (sidebar themes) */
-    --role-superadmin: 287 51% 36%;
-    --role-admin: 16 100% 60%;
-    --role-senior: 49 100% 50%;
-    --role-teacher: 161 95% 42%;
-    --role-student: 210 90% 55%;
+    --role-superadmin: 258 52% 32%;
+    --role-admin: 18 88% 54%;
+    --role-senior: 42 92% 48%;
+    --role-teacher: 158 72% 38%;
+    --role-student: 214 84% 50%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(16 100% 60%), hsl(35 100% 60%));
-    --gradient-purple: linear-gradient(135deg, hsl(287 51% 36%), hsl(287 71% 55%));
-    --gradient-sunny:  linear-gradient(135deg, hsl(49 100% 62%), hsl(16 100% 65%));
-    --gradient-mint:   linear-gradient(135deg, hsl(161 95% 42%), hsl(190 80% 55%));
-    --gradient-party:  linear-gradient(120deg, hsl(16 100% 65%), hsl(287 71% 60%), hsl(49 100% 62%), hsl(161 95% 50%));
+    /* Gradients — subtle, monochrome-ish */
+    --gradient-primary: linear-gradient(135deg, hsl(18 88% 54%), hsl(14 82% 48%));
+    --gradient-purple: linear-gradient(135deg, hsl(258 52% 32%), hsl(258 48% 44%));
+    --gradient-sunny:  linear-gradient(135deg, hsl(42 92% 56%), hsl(28 88% 54%));
+    --gradient-mint:   linear-gradient(135deg, hsl(158 72% 38%), hsl(180 60% 42%));
+    --gradient-party:  linear-gradient(120deg, hsl(18 88% 54%), hsl(258 52% 38%));
 
-    /* Soft shadows */
-    --shadow-soft: 0 6px 20px -8px hsl(285 52% 18% / 0.15);
-    --shadow-card: 0 10px 30px -12px hsl(287 51% 36% / 0.18);
-    --shadow-pop:  0 18px 40px -12px hsl(16 100% 60% / 0.35);
+    /* Subtle, professional shadows */
+    --shadow-soft: 0 1px 2px 0 hsl(222 32% 12% / 0.04), 0 1px 3px 0 hsl(222 32% 12% / 0.06);
+    --shadow-card: 0 4px 12px -4px hsl(222 32% 12% / 0.08), 0 2px 4px -2px hsl(222 32% 12% / 0.04);
+    --shadow-pop:  0 12px 32px -12px hsl(222 32% 12% / 0.18);
 
-    /* Sidebar (override per role via inline style) */
+    /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 285 52% 18%;
-    --sidebar-primary: 16 100% 60%;
+    --sidebar-foreground: 222 32% 12%;
+    --sidebar-primary: 18 88% 54%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 33 60% 96%;
-    --sidebar-accent-foreground: 285 52% 18%;
-    --sidebar-border: 33 30% 90%;
-    --sidebar-ring: 16 100% 60%;
+    --sidebar-accent: 220 20% 96%;
+    --sidebar-accent-foreground: 222 32% 12%;
+    --sidebar-border: 220 18% 92%;
+    --sidebar-ring: 18 88% 54%;
   }
 
   .dark {
-    --background: 285 35% 10%;
-    --foreground: 33 100% 97%;
-    --card: 285 35% 14%;
-    --card-foreground: 33 100% 97%;
-    --popover: 285 35% 14%;
-    --popover-foreground: 33 100% 97%;
-    --primary: 16 100% 60%;
+    --background: 222 28% 8%;
+    --foreground: 220 20% 96%;
+    --card: 222 26% 11%;
+    --card-foreground: 220 20% 96%;
+    --popover: 222 26% 11%;
+    --popover-foreground: 220 20% 96%;
+    --primary: 18 88% 56%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 287 51% 55%;
+    --secondary: 258 40% 60%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 285 25% 20%;
-    --muted-foreground: 33 30% 70%;
-    --accent: 49 100% 62%;
-    --accent-foreground: 285 52% 18%;
-    --destructive: 0 78% 60%;
+    --muted: 222 22% 16%;
+    --muted-foreground: 220 14% 65%;
+    --accent: 42 92% 56%;
+    --accent-foreground: 222 32% 12%;
+    --destructive: 0 72% 56%;
     --destructive-foreground: 0 0% 100%;
-    --border: 285 25% 22%;
-    --input: 285 25% 22%;
-    --ring: 16 100% 60%;
+    --border: 222 22% 18%;
+    --input: 222 22% 18%;
+    --ring: 18 88% 54%;
   }
 }
 
@@ -115,17 +116,24 @@
   html, body, #root { height: 100%; }
   body {
     @apply bg-background text-foreground font-sans;
-    font-feature-settings: "ss01", "cv01";
+    font-feature-settings: "ss01", "cv11", "cv02";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.005em;
   }
-  h1, h2, h3, h4 { font-family: 'Fredoka', 'Nunito', system-ui, sans-serif; @apply font-bold; }
+  h1, h2, h3, h4 {
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    @apply font-semibold tracking-tight;
+    letter-spacing: -0.02em;
+  }
 }
 
 @layer components {
   .card-soft {
-    @apply rounded-2xl bg-card border border-border/60 shadow-[var(--shadow-soft)];
+    @apply rounded-xl bg-card border border-border shadow-[var(--shadow-soft)];
   }
   .card-pop {
-    @apply rounded-2xl bg-card border border-border/60 shadow-[var(--shadow-card)];
+    @apply rounded-xl bg-card border border-border shadow-[var(--shadow-card)];
   }
   .gradient-primary { background: var(--gradient-primary); }
   .gradient-purple  { background: var(--gradient-purple); }

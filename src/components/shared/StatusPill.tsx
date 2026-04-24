@@ -21,8 +21,8 @@ const map: Record<string, string> = {
 export function StatusPill({ status, className }: { status: string; className?: string }) {
   const cls = map[status] ?? "bg-muted text-muted-foreground";
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold whitespace-nowrap", cls, className)}>
-      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap", cls, className)}>
+      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
       {status}
     </span>
   );

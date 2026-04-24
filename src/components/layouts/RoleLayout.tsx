@@ -15,11 +15,11 @@ import {
 export type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean };
 
 const ROLE_THEME: Record<Role, { hsl: string; gradient: string }> = {
-  "super-admin":    { hsl: "287 51% 36%", gradient: "from-secondary to-secondary/70" },
-  "admin":          { hsl: "16 100% 60%", gradient: "from-primary to-primary/70" },
-  "senior-teacher": { hsl: "49 100% 50%", gradient: "from-accent to-primary" },
-  "teacher":        { hsl: "161 95% 42%", gradient: "from-success to-info" },
-  "student":        { hsl: "210 90% 55%", gradient: "from-info to-secondary" },
+  "super-admin":    { hsl: "258 52% 32%", gradient: "from-secondary to-secondary/80" },
+  "admin":          { hsl: "18 88% 54%",  gradient: "from-primary to-primary/80" },
+  "senior-teacher": { hsl: "42 92% 48%",  gradient: "from-accent to-primary/80" },
+  "teacher":        { hsl: "158 72% 38%", gradient: "from-success to-info/80" },
+  "student":        { hsl: "214 84% 50%", gradient: "from-info to-secondary/80" },
 };
 
 export function RoleLayout({ navItems, role }: { navItems: NavItem[]; role: Role }) {
@@ -33,21 +33,24 @@ export function RoleLayout({ navItems, role }: { navItems: NavItem[]; role: Role
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed lg:sticky top-0 left-0 z-40 h-screen w-64 shrink-0 bg-card border-r border-border/60 flex flex-col transition-transform",
+          "fixed lg:sticky top-0 left-0 z-40 h-screen w-64 shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col transition-transform",
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
-        <div className="p-4 border-b border-border/60 flex items-center justify-between">
+        <div className="px-5 h-16 border-b border-sidebar-border flex items-center justify-between">
           <Logo />
           <button onClick={() => setOpen(false)} className="lg:hidden p-2 rounded-lg hover:bg-muted">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className={cn("mx-4 mt-4 mb-2 rounded-xl p-3 text-white shadow-soft bg-gradient-to-br", theme.gradient)}>
-          <div className="text-[10px] uppercase tracking-widest opacity-80 font-bold">Signed in as</div>
-          <div className="font-display font-bold text-base">{ROLE_LABELS[role]}</div>
+        <div className="mx-3 mt-4 mb-2 rounded-lg px-3 py-2.5 bg-muted/60 border border-border">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Signed in as</div>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: `hsl(${theme.hsl})` }} />
+            <div className="font-display font-semibold text-sm text-foreground">{ROLE_LABELS[role]}</div>
+          </div>
         </div>
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin">
+        <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5 scrollbar-thin">
           {navItems.map(item => (
             <NavLink
               key={item.to}
@@ -55,22 +58,35 @@ export function RoleLayout({ navItems, role }: { navItems: NavItem[]; role: Role
               end={item.end}
               onClick={() => setOpen(false)}
               className={({ isActive }) => cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                "group flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors relative",
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-soft"
-                  : "text-foreground/70 hover:bg-muted hover:text-foreground",
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
               )}
-              style={({ isActive }) => isActive ? { background: `hsl(${theme.hsl})`, color: "white" } : undefined}
             >
-              <item.icon className="w-4 h-4" strokeWidth={2.4} />
-              <span>{item.label}</span>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span
+                      className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r"
+                      style={{ background: `hsl(${theme.hsl})` }}
+                    />
+                  )}
+                  <item.icon
+                    className="w-4 h-4 shrink-0"
+                    strokeWidth={2}
+                    style={isActive ? { color: `hsl(${theme.hsl})` } : undefined}
+                  />
+                  <span>{item.label}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
-        <div className="p-3 border-t border-border/60">
+        <div className="p-3 border-t border-sidebar-border">
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 rounded-xl text-destructive hover:bg-destructive-soft hover:text-destructive"
+            className="w-full justify-start gap-3 rounded-md text-muted-foreground hover:bg-destructive-soft hover:text-destructive font-medium"
             onClick={() => { logout(); navigate("/login"); }}
           >
             <LogOut className="w-4 h-4" /> Logout
@@ -82,28 +98,28 @@ export function RoleLayout({ navItems, role }: { navItems: NavItem[]; role: Role
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-20 bg-background/80 backdrop-blur border-b border-border/60">
-          <div className="flex items-center justify-between gap-3 px-4 sm:px-6 h-16">
+        <header className="sticky top-0 z-20 bg-background/85 backdrop-blur border-b border-border">
+          <div className="flex items-center justify-between gap-3 px-4 sm:px-6 h-14">
             <button className="lg:hidden p-2 rounded-lg hover:bg-muted" onClick={() => setOpen(true)}>
               <Menu className="w-5 h-5" />
             </button>
             <div className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground">
               <Palette className="w-4 h-4 text-primary" />
-              <span className="font-semibold">Little Brushes Art Academy ERP</span>
+              <span className="font-medium">Little Brushes Art Academy</span>
             </div>
             <div className="flex items-center gap-2 ml-auto">
               <span
-                className="hidden sm:inline-flex items-center rounded-full px-3 py-1 text-xs font-bold text-white shadow-soft"
-                style={{ background: `hsl(${theme.hsl})` }}
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground"
               >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: `hsl(${theme.hsl})` }} />
                 {ROLE_LABELS[role]}
               </span>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="relative p-2 rounded-xl hover:bg-muted transition-colors" aria-label="Notifications">
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 grid place-items-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold">3</span>
+                  <button className="relative p-2 rounded-md hover:bg-muted transition-colors" aria-label="Notifications">
+                    <Bell className="w-[18px] h-[18px]" strokeWidth={2} />
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary ring-2 ring-background" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
@@ -121,10 +137,10 @@ export function RoleLayout({ navItems, role }: { navItems: NavItem[]; role: Role
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 rounded-xl hover:bg-muted p-1 pr-2 transition-colors">
-                    <Avatar name={user?.name ?? "User"} size={32} />
-                    <span className="hidden sm:block text-sm font-semibold">{user?.name}</span>
-                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  <button className="flex items-center gap-2 rounded-md hover:bg-muted p-1 pr-2 transition-colors">
+                    <Avatar name={user?.name ?? "User"} size={28} />
+                    <span className="hidden sm:block text-sm font-medium">{user?.name}</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
