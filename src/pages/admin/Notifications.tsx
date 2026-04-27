@@ -8,11 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { notificationLog } from "@/data/mockData";
+import { useStore, actions } from "@/store/dataStore";
 import { toast } from "sonner";
 
 export default function Notifications() {
+  const notificationLog = useStore(s => s.notifLog);
   const [channels, setChannels] = useState<Record<string, boolean>>({ SMS: true, WhatsApp: true, Email: false, Push: false });
+  const [target, setTarget] = useState("parents");
+  const [message, setMessage] = useState("");
 
   return (
     <div className="space-y-6">
@@ -20,11 +23,19 @@ export default function Notifications() {
       <div className="grid lg:grid-cols-2 gap-5">
         <form
           className="card-soft p-5 space-y-4"
-          onSubmit={e => { e.preventDefault(); toast.success("Notification queued! 📨"); }}
+          onSubmit={e => {
+            e.preventDefault();
+            if (!message) { toast.error("Write a message"); return; }
+            const ch = Object.entries(channels).filter(([, v]) => v).map(([k]) => k).join(", ") || "SMS";
+            const targetLabel = ({ parents: "All Parents", students: "All Students", staff: "Staff", class: "Specific class" } as Record<string,string>)[target] || target;
+            actions.sendNotification({ target: targetLabel, channel: ch, message });
+            toast.success("Notification queued! 📨");
+            setMessage("");
+          }}
         >
           <div className="space-y-1.5">
             <Label>Target audience</Label>
-            <Select defaultValue="parents"><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+            <Select value={target} onValueChange={setTarget}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="parents">All parents</SelectItem>
                 <SelectItem value="students">All students</SelectItem>
@@ -51,7 +62,7 @@ export default function Notifications() {
           </div>
           <div className="space-y-1.5">
             <Label>Message</Label>
-            <Textarea rows={4} placeholder="Type your message..." className="rounded-xl" />
+            <Textarea rows={4} placeholder="Type your message..." className="rounded-xl" value={message} onChange={e => setMessage(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label>Schedule (optional)</Label>
