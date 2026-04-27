@@ -6,16 +6,22 @@ import { StatusPill } from "@/components/shared/StatusPill";
 import { Avatar } from "@/components/shared/Avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { slotRequests as initSlots, leaveRequests as initLeaves, todaysClasses, teachers, chatThreads, chatMessages } from "@/data/mockData";
+import { todaysClasses, chatThreads, chatMessages } from "@/data/mockData";
+import { useStore, actions } from "@/store/dataStore";
 import { toast } from "sonner";
 
 export function SeniorDashboard() {
+  const slots = useStore(s => s.slots);
+  const leaves = useStore(s => s.leaves);
+  const teachers = useStore(s => s.teachers);
+  const pendingSlots = slots.filter(r => r.status === "Pending").length;
+  const pendingLeaves = leaves.filter(l => l.status === "Pending").length;
   return (
     <div className="space-y-6">
       <PageHeader title="Senior Teacher Dashboard" subtitle="Approvals and oversight" />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Pending Slot Approvals" value={3} icon={ClipboardCheck} tone="warning" />
-        <StatCard label="Pending Leaves" value={2} icon={CalendarOff} tone="destructive" />
+        <StatCard label="Pending Slot Approvals" value={pendingSlots} icon={ClipboardCheck} tone="warning" />
+        <StatCard label="Pending Leaves" value={pendingLeaves} icon={CalendarOff} tone="destructive" />
         <StatCard label="Classes Today" value={todaysClasses.length} icon={CalendarDays} tone="primary" />
         <StatCard label="My Teachers" value={teachers.length} icon={Users} tone="success" />
       </div>
@@ -36,15 +42,16 @@ export function SeniorDashboard() {
 }
 
 export function ClassApprovals() {
-  const [reqs, setReqs] = useState(initSlots.filter(r => r.status === "Pending"));
+  const all = useStore(s => s.slots);
+  const reqs = all.filter(r => r.status === "Pending");
   function act(id: string, ok: boolean) {
-    setReqs(prev => prev.filter(r => r.id !== id));
+    actions.setSlotStatus(id, ok ? "Approved" : "Denied");
     toast.success(ok ? "Approved!" : "Denied");
   }
   return (
     <div className="space-y-6">
       <PageHeader title="Class Approvals" subtitle={`${reqs.length} pending requests`} action={
-        <Button className="rounded-xl gradient-primary text-white border-0" onClick={() => { setReqs([]); toast.success("All approved!"); }}>Bulk approve</Button>
+        <Button className="rounded-xl gradient-primary text-white border-0" onClick={() => { reqs.forEach(r => actions.setSlotStatus(r.id, "Approved")); toast.success("All approved!"); }}>Bulk approve</Button>
       } />
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {reqs.map(r => (
@@ -71,11 +78,11 @@ export function ClassApprovals() {
 }
 
 export function LeaveApprovals() {
-  const [leaves, setLeaves] = useState(initLeaves);
+  const leaves = useStore(s => s.leaves);
   const [confirm, setConfirm] = useState<{ id: string; action: "Approved" | "Rejected" } | null>(null);
   function act() {
     if (!confirm) return;
-    setLeaves(prev => prev.map(l => l.id === confirm.id ? { ...l, status: confirm.action } : l));
+    actions.setLeaveStatus(confirm.id, confirm.action);
     toast.success(`Leave ${confirm.action.toLowerCase()}`);
     setConfirm(null);
   }
