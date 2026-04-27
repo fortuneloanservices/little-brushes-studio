@@ -64,7 +64,7 @@ export default function Teachers() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {teachers.map(t => (
           <div key={t.id} className="card-soft overflow-hidden hover:shadow-card transition-all hover:-translate-y-0.5">
-            <div className={`h-20 bg-gradient-to-br ${TONE[t.specialization]} relative`}>
+            <div className={`h-20 bg-gradient-to-br ${TONE[t.specialization] || "from-primary to-secondary"} relative`}>
               <div className="absolute -bottom-7 left-4">
                 <Avatar name={t.name} size={56} className="ring-4 ring-card" />
               </div>
