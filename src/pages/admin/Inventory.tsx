@@ -9,12 +9,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { inventoryItems, recentIssues, students } from "@/data/mockData";
+import { useStore, actions } from "@/store/dataStore";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { toast } from "sonner";
 
 export default function Inventory() {
+  const inventoryItems = useStore(s => s.inventory);
+  const recentIssues = useStore(s => s.issues);
+  const students = useStore(s => s.students);
   const [issueOpen, setIssueOpen] = useState(false);
+  const [form, setForm] = useState({ studentId: "", itemId: "", qty: "1" });
   const totalItems = inventoryItems.reduce((s, i) => s + i.stock, 0);
   const low = inventoryItems.filter(i => i.status === "Low Stock").length;
   const issued = recentIssues.reduce((s, r) => s + r.qty, 0);
@@ -95,21 +99,29 @@ export default function Inventory() {
       <Dialog open={issueOpen} onOpenChange={setIssueOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Issue inventory item</DialogTitle></DialogHeader>
-          <form className="space-y-3" onSubmit={e => { e.preventDefault(); toast.success("Item issued!"); setIssueOpen(false); }}>
+          <form className="space-y-3" onSubmit={e => {
+            e.preventDefault();
+            const stu = students.find(s => s.id === form.studentId);
+            if (!stu || !form.itemId) { toast.error("Pick student and item"); return; }
+            actions.issueItem({ itemId: form.itemId, studentName: stu.name, qty: Number(form.qty) || 1 });
+            toast.success("Item issued — stock updated!");
+            setIssueOpen(false);
+            setForm({ studentId: "", itemId: "", qty: "1" });
+          }}>
             <div className="space-y-1.5">
               <Label>Student</Label>
-              <Select><SelectTrigger><SelectValue placeholder="Pick student" /></SelectTrigger>
-                <SelectContent>{students.slice(0,8).map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+              <Select value={form.studentId} onValueChange={v => setForm(f => ({ ...f, studentId: v }))}><SelectTrigger><SelectValue placeholder="Pick student" /></SelectTrigger>
+                <SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Item</Label>
-              <Select><SelectTrigger><SelectValue placeholder="Pick item" /></SelectTrigger>
+              <Select value={form.itemId} onValueChange={v => setForm(f => ({ ...f, itemId: v }))}><SelectTrigger><SelectValue placeholder="Pick item" /></SelectTrigger>
                 <SelectContent>{inventoryItems.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Quantity</Label><Input type="number" defaultValue={1} /></div>
+              <div className="space-y-1.5"><Label>Quantity</Label><Input type="number" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))} /></div>
               <div className="space-y-1.5">
                 <Label>Size</Label>
                 <Select><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
