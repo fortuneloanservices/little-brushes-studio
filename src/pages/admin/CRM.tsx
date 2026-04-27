@@ -7,7 +7,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, TrendingUp, UserPlus, Target } from "lucide-react";
-import { leads as initialLeads, leadStages } from "@/data/mockData";
+import { leadStages } from "@/data/mockData";
+import { useStore, actions } from "@/store/dataStore";
 import { toast } from "sonner";
 
 const STAGE_TONE: Record<string, string> = {
@@ -18,12 +19,13 @@ const STAGE_TONE: Record<string, string> = {
 };
 
 export default function CRM() {
-  const [leads, setLeads] = useState(initialLeads);
+  const leads = useStore(s => s.leads);
   const [open, setOpen] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [form, setForm] = useState({ child: "", parent: "", phone: "", source: "" });
 
   function move(id: string, stage: typeof leadStages[number]) {
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, stage } : l));
+    actions.moveLead(id, stage);
     toast.success(`Moved to ${stage}`);
   }
 
@@ -37,11 +39,18 @@ export default function CRM() {
           <SheetTrigger asChild><Button className="rounded-xl gradient-primary text-white border-0 shadow-pop"><Plus className="w-4 h-4 mr-1" />Add Lead</Button></SheetTrigger>
           <SheetContent className="w-full sm:max-w-md">
             <SheetHeader><SheetTitle>New lead</SheetTitle></SheetHeader>
-            <form className="space-y-4 mt-6" onSubmit={e => { e.preventDefault(); toast.success("Lead added!"); setOpen(false); }}>
-              <div className="space-y-1.5"><Label>Child name</Label><Input required /></div>
-              <div className="space-y-1.5"><Label>Parent name</Label><Input /></div>
-              <div className="space-y-1.5"><Label>Phone</Label><Input /></div>
-              <div className="space-y-1.5"><Label>Source</Label><Input placeholder="Instagram / Walk-in / Referral" /></div>
+            <form className="space-y-4 mt-6" onSubmit={e => {
+              e.preventDefault();
+              if (!form.child) return;
+              actions.addLead(form);
+              toast.success("Lead added!");
+              setOpen(false);
+              setForm({ child: "", parent: "", phone: "", source: "" });
+            }}>
+              <div className="space-y-1.5"><Label>Child name</Label><Input required value={form.child} onChange={e => setForm(f => ({ ...f, child: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Parent name</Label><Input value={form.parent} onChange={e => setForm(f => ({ ...f, parent: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Phone</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Source</Label><Input placeholder="Instagram / Walk-in / Referral" value={form.source} onChange={e => setForm(f => ({ ...f, source: e.target.value }))} /></div>
               <Button type="submit" className="w-full rounded-xl gradient-primary text-white border-0">Add Lead</Button>
             </form>
           </SheetContent>

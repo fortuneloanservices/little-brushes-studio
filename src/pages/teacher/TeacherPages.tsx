@@ -10,12 +10,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { todaysClasses, slotRequests as initSlots, students, CLASSES, leaveRequests } from "@/data/mockData";
+import { todaysClasses, CLASSES } from "@/data/mockData";
+import { useStore, actions } from "@/store/dataStore";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 export { ChatPage } from "@/pages/senior-teacher/SeniorTeacherPages";
 
 export function TeacherDashboard() {
+  const students = useStore(s => s.students);
+  const slots = useStore(s => s.slots);
   const birthdays = students.filter(s => s.isBirthdayToday).map(s => s.name);
   return (
     <div className="space-y-6">
@@ -23,8 +26,8 @@ export function TeacherDashboard() {
       <BirthdayBanner names={birthdays} />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Classes Today" value={todaysClasses.length} icon={Calendar} tone="primary" />
-        <StatCard label="Slot Requests" value={3} icon={ClipboardCheck} tone="warning" />
-        <StatCard label="My Students" value={42} icon={UsersIcon} tone="info" />
+        <StatCard label="Slot Requests" value={slots.filter(r => r.status === "Pending").length} icon={ClipboardCheck} tone="warning" />
+        <StatCard label="My Students" value={students.length} icon={UsersIcon} tone="info" />
         <StatCard label="Leave Balance" value="9 days" icon={CalendarOff} tone="success" />
       </div>
       <div className="card-soft p-5">
@@ -44,9 +47,9 @@ export function TeacherDashboard() {
 }
 
 export function TeacherSlotRequests() {
-  const [reqs, setReqs] = useState(initSlots);
+  const reqs = useStore(s => s.slots);
   function act(id: string, ok: boolean) {
-    setReqs(prev => prev.map(r => r.id === id ? { ...r, status: ok ? "Approved" : "Denied" } : r));
+    actions.setSlotStatus(id, ok ? "Approved" : "Denied");
     toast.success(ok ? "Approved" : "Denied");
   }
   return (
@@ -76,6 +79,7 @@ export function TeacherSlotRequests() {
 }
 
 export function TeacherAttendance() {
+  const students = useStore(s => s.students);
   const [marks, setMarks] = useState<Record<string, "Present"|"Absent"|"Late">>(() => Object.fromEntries(students.slice(0, 10).map(s => [s.id, "Present"])));
   return (
     <div className="space-y-6">
@@ -109,6 +113,8 @@ export function TeacherAttendance() {
 }
 
 export function TeacherLeave() {
+  const leaveRequests = useStore(s => s.leaves);
+  const [form, setForm] = useState({ type: "Casual", from: "", to: "", reason: "" });
   return (
     <div className="space-y-6">
       <PageHeader title="My Leaves" subtitle="Apply and track" />
@@ -125,18 +131,24 @@ export function TeacherLeave() {
         </div>
         <div className="lg:col-span-2 card-soft p-5">
           <h3 className="font-display font-bold mb-3">Apply for leave</h3>
-          <form className="space-y-3" onSubmit={e => { e.preventDefault(); toast.success("Leave request submitted!"); }}>
+          <form className="space-y-3" onSubmit={e => {
+            e.preventDefault();
+            if (!form.from || !form.to) { toast.error("Pick dates"); return; }
+            actions.addLeave({ staff: "Sneha Kulkarni", type: form.type, from: form.from, to: form.to, reason: form.reason || "—" });
+            toast.success("Leave request submitted!");
+            setForm({ type: "Casual", from: "", to: "", reason: "" });
+          }}>
             <div className="space-y-1.5">
               <Label>Type</Label>
-              <Select defaultValue="Casual"><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+              <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="Casual">Casual</SelectItem><SelectItem value="Sick">Sick</SelectItem><SelectItem value="Personal">Personal</SelectItem></SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>From</Label><Input type="date" className="rounded-xl" /></div>
-              <div className="space-y-1.5"><Label>To</Label><Input type="date" className="rounded-xl" /></div>
+              <div className="space-y-1.5"><Label>From</Label><Input type="date" className="rounded-xl" value={form.from} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>To</Label><Input type="date" className="rounded-xl" value={form.to} onChange={e => setForm(f => ({ ...f, to: e.target.value }))} /></div>
             </div>
-            <div className="space-y-1.5"><Label>Reason</Label><Textarea rows={3} className="rounded-xl" /></div>
+            <div className="space-y-1.5"><Label>Reason</Label><Textarea rows={3} className="rounded-xl" value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} /></div>
             <Button type="submit" className="w-full rounded-xl gradient-primary text-white border-0"><Plus className="w-4 h-4 mr-1" />Submit</Button>
           </form>
         </div>

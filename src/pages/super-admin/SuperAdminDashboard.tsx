@@ -4,10 +4,16 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { Button } from "@/components/ui/button";
-import { dashboardStats, institutions } from "@/data/mockData";
+import { useStore } from "@/store/dataStore";
 
 export default function SuperAdminDashboard() {
-  const s = dashboardStats.superAdmin;
+  const institutions = useStore(st => st.institutions);
+  const s = {
+    institutes: institutions.length,
+    students: institutions.reduce((a, i) => a + i.students, 0),
+    revenue: 1240000,
+    tickets: 7,
+  };
   return (
     <div className="space-y-6">
       <PageHeader title="Super Admin Dashboard" subtitle="Overview across all institutes" />

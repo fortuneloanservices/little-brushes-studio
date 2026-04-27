@@ -7,11 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Logo } from "@/components/shared/Logo";
-import { feeStructure, students, payments, INSTITUTE } from "@/data/mockData";
+import { feeStructure, INSTITUTE } from "@/data/mockData";
+import { useStore, actions } from "@/store/dataStore";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
 export default function Billing() {
+  const students = useStore(s => s.students);
+  const payments = useStore(s => s.payments);
   const [payOpen, setPayOpen] = useState<typeof students[number] | null>(null);
   const [receipt, setReceipt] = useState<{ s: typeof students[number]; amount: number; mode: string } | null>(null);
 
@@ -19,6 +22,7 @@ export default function Billing() {
 
   function pay(amount: number, mode: string) {
     if (!payOpen) return;
+    actions.recordPayment({ studentName: payOpen.name, amount, mode: mode as "Online" | "Cash" });
     setReceipt({ s: payOpen, amount, mode });
     setPayOpen(null);
     toast.success("Payment successful! 🎉");

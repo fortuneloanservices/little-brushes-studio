@@ -11,12 +11,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { students, CLASSES, makeAttendance, certificates, payments } from "@/data/mockData";
+import { CLASSES, makeAttendance } from "@/data/mockData";
+import { useStore, actions } from "@/store/dataStore";
 import { toast } from "sonner";
 
 export default function Students() {
+  const students = useStore(s => s.students);
+  const certificates = useStore(s => s.certificates);
+  const payments = useStore(s => s.payments);
   const [selected, setSelected] = useState<typeof students[number] | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", age: "", class: "", parent: "", phone: "", dob: "" });
 
   return (
     <div className="space-y-6">
@@ -30,20 +35,27 @@ export default function Students() {
             </SheetTrigger>
             <SheetContent className="w-full sm:max-w-md">
               <SheetHeader><SheetTitle>Add new student</SheetTitle></SheetHeader>
-              <form className="space-y-4 mt-6" onSubmit={e => { e.preventDefault(); toast.success("Student added!"); setAddOpen(false); }}>
-                <div className="space-y-1.5"><Label>Full name</Label><Input placeholder="e.g. Aarav Sharma" required /></div>
+              <form className="space-y-4 mt-6" onSubmit={e => {
+                e.preventDefault();
+                if (!form.name) return;
+                actions.addStudent({ name: form.name, age: Number(form.age) || 8, class: form.class || CLASSES[1], parent: form.parent, phone: form.phone, dob: form.dob });
+                toast.success("Student added — synced everywhere!");
+                setAddOpen(false);
+                setForm({ name: "", age: "", class: "", parent: "", phone: "", dob: "" });
+              }}>
+                <div className="space-y-1.5"><Label>Full name</Label><Input placeholder="e.g. Aarav Sharma" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5"><Label>Age</Label><Input type="number" placeholder="8" required /></div>
+                  <div className="space-y-1.5"><Label>Age</Label><Input type="number" placeholder="8" required value={form.age} onChange={e => setForm(f => ({ ...f, age: e.target.value }))} /></div>
                   <div className="space-y-1.5">
                     <Label>Class</Label>
-                    <Select><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <Select value={form.class} onValueChange={v => setForm(f => ({ ...f, class: v }))}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>{CLASSES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-1.5"><Label>Parent's name</Label><Input placeholder="Parent name" /></div>
-                <div className="space-y-1.5"><Label>Phone</Label><Input placeholder="+91 ..." /></div>
-                <div className="space-y-1.5"><Label>Date of birth</Label><Input type="date" /></div>
+                <div className="space-y-1.5"><Label>Parent's name</Label><Input placeholder="Parent name" value={form.parent} onChange={e => setForm(f => ({ ...f, parent: e.target.value }))} /></div>
+                <div className="space-y-1.5"><Label>Phone</Label><Input placeholder="+91 ..." value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
+                <div className="space-y-1.5"><Label>Date of birth</Label><Input type="date" value={form.dob} onChange={e => setForm(f => ({ ...f, dob: e.target.value }))} /></div>
                 <Button type="submit" className="w-full rounded-xl gradient-primary text-white border-0">Add Student</Button>
               </form>
             </SheetContent>
@@ -74,14 +86,14 @@ export default function Students() {
 
       <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
         <DialogContent className="max-w-3xl">
-          {selected && <StudentProfile s={selected} />}
+          {selected && <StudentProfile s={selected} certificates={certificates} payments={payments} />}
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-function StudentProfile({ s }: { s: typeof students[number] }) {
+function StudentProfile({ s, certificates, payments }: { s: any; certificates: any[]; payments: any[] }) {
   const att = makeAttendance(0);
   const present = att.filter(a => a.status === "Present").length;
   const studentCerts = certificates.filter(c => c.studentId === s.id);

@@ -5,17 +5,18 @@ import { DataTable } from "@/components/shared/DataTable";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { salaries, leaveRequests, INSTITUTE } from "@/data/mockData";
+import { salaries, INSTITUTE } from "@/data/mockData";
+import { useStore, actions } from "@/store/dataStore";
 import { Logo } from "@/components/shared/Logo";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function Payroll() {
   const [slip, setSlip] = useState<typeof salaries[number] | null>(null);
-  const [leaves, setLeaves] = useState(leaveRequests);
+  const leaves = useStore(s => s.leaves);
 
   function act(id: string, status: "Approved" | "Rejected") {
-    setLeaves(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+    actions.setLeaveStatus(id, status);
     toast.success(`Leave ${status.toLowerCase()}`);
   }
 

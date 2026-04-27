@@ -5,10 +5,13 @@ import { Avatar } from "@/components/shared/Avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { students, certificateTypes, INSTITUTE } from "@/data/mockData";
+import { certificateTypes, INSTITUTE } from "@/data/mockData";
+import { useStore, actions } from "@/store/dataStore";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export default function Certificates() {
+  const students = useStore(s => s.students);
   const [preview, setPreview] = useState<{ student: string; type: string } | null>(null);
 
   return (
@@ -25,7 +28,11 @@ export default function Certificates() {
                 <div key={s.id} className="flex items-center gap-4 p-3 sm:p-4">
                   <Avatar name={s.name} />
                   <div className="flex-1 min-w-0"><div className="font-bold truncate">{s.name}</div><div className="text-xs text-muted-foreground">{s.badgeId} • {s.class}</div></div>
-                  <Button size="sm" className="rounded-lg gradient-primary text-white border-0" onClick={() => setPreview({ student: s.name, type: t })}>
+                  <Button size="sm" className="rounded-lg gradient-primary text-white border-0" onClick={() => {
+                    actions.issueCertificate({ studentId: s.id, student: s.name, type: t, course: t === "Bonafide" ? "General" : "Watercolor Basics" });
+                    setPreview({ student: s.name, type: t });
+                    toast.success("Certificate issued!");
+                  }}>
                     <Award className="w-3.5 h-3.5 mr-1" />Generate
                   </Button>
                 </div>
