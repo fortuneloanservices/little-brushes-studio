@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { students, teachers, CLASSES } from "@/data/mockData";
+import { CLASSES } from "@/data/mockData";
+import { useStore } from "@/store/dataStore";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -14,6 +15,8 @@ import { toast } from "sonner";
 type Status = "Present" | "Absent" | "Late";
 
 export default function Attendance() {
+  const students = useStore(s => s.students);
+  const teachers = useStore(s => s.teachers);
   const [mode, setMode] = useState<"student" | "teacher">("student");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [cls, setCls] = useState<string>("all");
