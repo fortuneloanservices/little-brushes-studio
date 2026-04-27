@@ -7,15 +7,20 @@ import { BirthdayBanner } from "@/components/shared/BirthdayBanner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { todaysClasses, makeAttendance, students, certificates, payments } from "@/data/mockData";
+import { todaysClasses, makeAttendance } from "@/data/mockData";
+import { useStore, actions } from "@/store/dataStore";
 import { CertificatePreview } from "@/pages/admin/Certificates";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSunday } from "date-fns";
 import { toast } from "sonner";
 export { ChatPage } from "@/pages/senior-teacher/SeniorTeacherPages";
 
-const me = { ...students[0], isBirthdayToday: true };
+function useMe() {
+  const students = useStore(s => s.students);
+  return { ...students[0], isBirthdayToday: true };
+}
 
 export function StudentDashboard() {
+  const me = useMe();
   const att = makeAttendance(0);
   const pct = Math.round(att.filter(a => a.status === "Present").length / att.length * 100);
   return (
@@ -66,10 +71,9 @@ export function MyClassesStudent() {
 }
 
 export function RequestSlot() {
-  const [requests, setRequests] = useState([
-    { id: "R1", class: "Watercolor Basics", time: "4:00 PM", date: format(new Date(),"yyyy-MM-dd"), status: "Pending"  as const },
-    { id: "R2", class: "Sketching",         time: "5:00 PM", date: format(new Date(),"yyyy-MM-dd"), status: "Approved" as const },
-  ]);
+  const me = useMe();
+  const allSlots = useStore(s => s.slots);
+  const requests = allSlots.filter(r => r.studentId === me.id);
   const slots = [
     { class: "Acrylic Painting",  time: "4:30 PM", seats: 4 },
     { class: "Clay Sculpting",    time: "5:30 PM", seats: 6 },
@@ -83,7 +87,10 @@ export function RequestSlot() {
           <div key={i} className="card-soft p-4 space-y-2">
             <div className="font-display font-bold">{s.class}</div>
             <div className="text-sm text-muted-foreground">{s.time} • {s.seats} seats left</div>
-            <Button className="w-full rounded-xl gradient-primary text-white border-0" onClick={() => { setRequests(r => [{ id: `R${r.length+1}`, class: s.class, time: s.time, date: format(new Date(),"yyyy-MM-dd"), status: "Pending" }, ...r]); toast.success("Request sent!"); }}>
+            <Button className="w-full rounded-xl gradient-primary text-white border-0" onClick={() => {
+              actions.addSlotRequest({ studentId: me.id, student: me.name, badge: me.badgeId, class: s.class, time: s.time, date: format(new Date(),"yyyy-MM-dd") });
+              toast.success("Request sent — teacher notified!");
+            }}>
               Request entry
             </Button>
           </div>
@@ -103,6 +110,7 @@ export function RequestSlot() {
 }
 
 export function StudentAttendance() {
+  const me = useMe();
   const att = makeAttendance(0);
   const map = Object.fromEntries(att.map(a => [a.date, a.status]));
   const today = new Date();
@@ -144,6 +152,8 @@ export function StudentAttendance() {
 }
 
 export function StudentFees() {
+  const me = useMe();
+  const payments = useStore(s => s.payments);
   const [payOpen, setPayOpen] = useState(false);
   const balance = me.totalFee - me.paidFee;
   const myPays = payments.filter(p => p.student === me.name);
@@ -177,7 +187,11 @@ export function StudentFees() {
             <TabsContent value="card" className="text-sm text-muted-foreground py-3">Visa / Master / Rupay accepted.</TabsContent>
             <TabsContent value="nb" className="text-sm text-muted-foreground py-3">All major banks supported.</TabsContent>
           </Tabs>
-          <Button className="w-full rounded-xl text-white border-0" style={{ background: "#072654" }} onClick={() => { setPayOpen(false); toast.success("Payment successful! 🎉"); }}>Pay ₹{balance.toLocaleString()}</Button>
+          <Button className="w-full rounded-xl text-white border-0" style={{ background: "#072654" }} onClick={() => {
+            actions.recordPayment({ studentName: me.name, amount: balance, mode: "Online" });
+            setPayOpen(false);
+            toast.success("Payment successful! 🎉");
+          }}>Pay ₹{balance.toLocaleString()}</Button>
         </DialogContent>
       </Dialog>
     </div>
@@ -185,6 +199,8 @@ export function StudentFees() {
 }
 
 export function StudentCertificates() {
+  const me = useMe();
+  const certificates = useStore(s => s.certificates);
   const myCerts = certificates.filter(c => c.studentId === me.id);
   const [preview, setPreview] = useState<{ student: string; type: string } | null>(null);
   return (
