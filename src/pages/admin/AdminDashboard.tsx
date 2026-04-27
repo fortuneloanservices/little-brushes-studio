@@ -2,11 +2,26 @@ import { Users, GraduationCap, IndianRupee, AlertCircle, Sparkles, Boxes, Calend
 import { StatCard } from "@/components/shared/StatCard";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { BirthdayBanner } from "@/components/shared/BirthdayBanner";
-import { dashboardStats, students, todaysClasses } from "@/data/mockData";
+import { todaysClasses } from "@/data/mockData";
+import { useStore } from "@/store/dataStore";
 import { Avatar } from "@/components/shared/Avatar";
 
 export default function AdminDashboard() {
-  const s = dashboardStats.admin;
+  const students = useStore(st => st.students);
+  const teachers = useStore(st => st.teachers);
+  const payments = useStore(st => st.payments);
+  const leads = useStore(st => st.leads);
+  const inventory = useStore(st => st.inventory);
+  const leaves = useStore(st => st.leaves);
+  const s = {
+    students: students.length,
+    teachers: teachers.length,
+    feeCollected: payments.reduce((a, p) => a + p.amount, 0),
+    pendingDues: students.filter(x => x.feeStatus !== "Paid").reduce((a, x) => a + (x.totalFee - x.paidFee), 0),
+    openLeads: leads.filter(l => l.stage !== "Enrolled").length,
+    lowStock: inventory.filter(i => i.status === "Low Stock").length,
+    pendingLeaves: leaves.filter(l => l.status === "Pending").length,
+  };
   const birthdays = students.filter(st => st.isBirthdayToday).map(st => st.name);
   return (
     <div className="space-y-6">
