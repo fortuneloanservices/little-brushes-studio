@@ -227,4 +227,35 @@ export const actions = {
     set(st => ({ institutions: [i, ...st.institutions] }));
     return i;
   },
+
+  // Drawing tests
+  submitDrawingTest(input: {
+    title: string;
+    studentId: string;
+    studentName: string;
+    teacherName: string;
+    className: string;
+    teacherImage: string;
+    studentImage: string;
+    durationMinutes: number;
+  }) {
+    const id = `DT${String(state.drawingTests.length + 1).padStart(3, "0")}`;
+    const t: DrawingTest = {
+      id,
+      ...input,
+      submittedAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+      status: "Pending Review",
+    };
+    set(st => ({ drawingTests: [t, ...st.drawingTests] }));
+    return t;
+  },
+  scoreDrawingTest(id: string, input: { studentScore: DrawingScore; teacherScore: DrawingScore; notes?: string }) {
+    set(st => ({
+      drawingTests: st.drawingTests.map(t =>
+        t.id === id
+          ? { ...t, ...input, reviewerNotes: input.notes, status: "Scored", reviewedAt: new Date().toISOString().slice(0, 16).replace("T", " ") }
+          : t,
+      ),
+    }));
+  },
 };
