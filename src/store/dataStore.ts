@@ -26,6 +26,25 @@ type Certificate = typeof seedCerts[number];
 type NotifLog = typeof seedNotifLog[number];
 type Institution = typeof seedInstitutions[number];
 
+export type DrawingScore = { duration: number; neatness: number; art: number };
+export type DrawingTest = {
+  id: string;
+  title: string;
+  studentId: string;
+  studentName: string;
+  teacherName: string;
+  className: string;
+  teacherImage: string; // data URL
+  studentImage: string; // data URL
+  durationMinutes: number; // time student took
+  submittedAt: string;
+  status: "Pending Review" | "Scored";
+  studentScore?: DrawingScore;
+  teacherScore?: DrawingScore;
+  reviewerNotes?: string;
+  reviewedAt?: string;
+};
+
 export type State = {
   students: Student[];
   teachers: Teacher[];
@@ -38,6 +57,7 @@ export type State = {
   certificates: Certificate[];
   notifLog: NotifLog[];
   institutions: Institution[];
+  drawingTests: DrawingTest[];
 };
 
 let state: State = {
@@ -52,6 +72,7 @@ let state: State = {
   certificates: [...seedCerts],
   notifLog: [...seedNotifLog],
   institutions: [...seedInstitutions],
+  drawingTests: [],
 };
 
 const listeners = new Set<() => void>();
