@@ -6,9 +6,10 @@ import { StatusPill } from "@/components/shared/StatusPill";
 import { Avatar } from "@/components/shared/Avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { todaysClasses, chatThreads, chatMessages } from "@/data/mockData";
+import { todaysClasses } from "@/data/mockData";
 import { useStore, actions } from "@/store/dataStore";
 import { toast } from "sonner";
+export { Chat as ChatPage } from "@/pages/shared/Chat";
 
 export function SeniorDashboard() {
   const slots = useStore(s => s.slots);
@@ -136,38 +137,3 @@ export function MyClasses() {
   );
 }
 
-export function ChatPage() {
-  const [active, setActive] = useState(chatThreads[0].id);
-  return (
-    <div className="space-y-4">
-      <PageHeader title="Chat" subtitle="Connect with students and staff" />
-      <div className="card-soft grid md:grid-cols-3 h-[600px] overflow-hidden">
-        <div className="border-r border-border/60 overflow-y-auto">
-          {chatThreads.map(t => (
-            <button key={t.id} onClick={() => setActive(t.id)} className={`w-full text-left p-3 flex items-center gap-3 hover:bg-muted ${active === t.id ? "bg-muted" : ""}`}>
-              <Avatar name={t.name} />
-              <div className="flex-1 min-w-0"><div className="font-bold text-sm truncate">{t.name}</div><div className="text-xs text-muted-foreground truncate">{t.last}</div></div>
-              {t.unread > 0 && <span className="text-[10px] font-bold bg-primary text-primary-foreground rounded-full px-2 py-0.5">{t.unread}</span>}
-            </button>
-          ))}
-        </div>
-        <div className="md:col-span-2 flex flex-col">
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/20">
-            {chatMessages.map(m => (
-              <div key={m.id} className={`flex ${m.from === "me" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-xs rounded-2xl px-4 py-2 text-sm ${m.from === "me" ? "gradient-primary text-white rounded-br-sm" : "bg-card border border-border/60 rounded-bl-sm"}`}>
-                  {m.text}
-                  <div className={`text-[10px] mt-1 ${m.from === "me" ? "text-white/70" : "text-muted-foreground"}`}>{m.time}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="p-3 border-t border-border/60 flex gap-2">
-            <input className="flex-1 rounded-xl border border-border/60 px-3 py-2 text-sm bg-background" placeholder="Type a message..." />
-            <Button className="rounded-xl gradient-primary text-white border-0">Send</Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
