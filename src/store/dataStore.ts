@@ -135,7 +135,7 @@ export const actions = {
     const id = `STU${String(1000 + state.students.length + 1).padStart(4, "0")}`;
     const badgeId = `LBA-${String(1000 + state.students.length + 1).padStart(4, "0")}`;
     const today = new Date().toISOString().slice(0, 10);
-    const s: Student = {
+    const s: any = {
       id, badgeId, name: input.name, age: input.age,
       class: (input.class as Student["class"]) || CLASSES[0],
       parent: input.parent || "—",
@@ -148,8 +148,14 @@ export const actions = {
       paidFee: 0,
       status: "Active",
       isBirthdayToday: false,
+      courseDurationMonths: (input as any).courseDurationMonths || 12,
+      courseEndDate: (() => {
+        const months = (input as any).courseDurationMonths || 12;
+        const d = new Date(); d.setMonth(d.getMonth() + months);
+        return d.toISOString().slice(0, 10);
+      })(),
     };
-    set(st => ({ students: [s, ...st.students] }));
+    set(st => ({ students: [s as Student, ...st.students] }));
     return s;
   },
   removeStudent(id: string) {
@@ -266,6 +272,46 @@ export const actions = {
     const i: Institution = { id, name: input.name, city: input.city, plan: input.plan, students: input.students || 0, status: "Trial" };
     set(st => ({ institutions: [i, ...st.institutions] }));
     return i;
+  },
+
+  // Chat
+  sendChatMessage(input: { threadId: string; fromRole: ChatMessage["fromRole"]; fromName: string; text: string }) {
+    if (!input.text.trim()) return;
+    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const m: ChatMessage = {
+      id: `M${Date.now().toString(36)}`,
+      threadId: input.threadId,
+      fromRole: input.fromRole,
+      fromName: input.fromName,
+      text: input.text.trim(),
+      time,
+    };
+    set(st => ({
+      chatMessages: [...st.chatMessages, m],
+      threads: st.threads.map(t => {
+        if (t.id !== input.threadId) return t;
+        const unread = { ...t.unread };
+        // Mark unread for every participant role except the sender
+        t.participants.forEach(role => {
+          if (role !== input.fromRole) unread[role] = (unread[role] || 0) + 1;
+        });
+        unread[input.fromRole] = 0;
+        return { ...t, lastMessage: m.text, lastTime: time, unread };
+      }),
+    }));
+    return m;
+  },
+  markThreadRead(threadId: string, role: ChatMessage["fromRole"]) {
+    set(st => ({
+      threads: st.threads.map(t => t.id === threadId ? { ...t, unread: { ...t.unread, [role]: 0 } } : t),
+    }));
+  },
+  createChatThread(input: { participants: ChatMessage["fromRole"][]; title: string; subtitle?: string }) {
+    const id = `TH${state.threads.length + 1}`;
+    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const t: ChatThread = { id, participants: input.participants, title: input.title, subtitle: input.subtitle, lastMessage: "—", lastTime: time, unread: {} };
+    set(st => ({ threads: [t, ...st.threads] }));
+    return t;
   },
 
   // Drawing tests
