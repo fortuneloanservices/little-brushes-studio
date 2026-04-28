@@ -16,6 +16,8 @@ const map: Record<string, string> = {
   Online: "bg-info/15 text-info",
   Cash: "bg-secondary-soft text-secondary",
   "Entry Allowed": "bg-success-soft text-success",
+  "Pending Review": "bg-warning-soft text-warning",
+  Scored: "bg-success-soft text-success",
 };
 
 export function StatusPill({ status, className }: { status: string; className?: string }) {
