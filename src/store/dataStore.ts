@@ -45,6 +45,26 @@ export type DrawingTest = {
   reviewedAt?: string;
 };
 
+export type ChatMessage = {
+  id: string;
+  threadId: string;
+  fromRole: "super-admin" | "admin" | "senior-teacher" | "teacher" | "student";
+  fromName: string;
+  text: string;
+  time: string;
+};
+
+export type ChatThread = {
+  id: string;
+  // participants are role identifiers — the thread shows up in any matching role inbox
+  participants: ("super-admin" | "admin" | "senior-teacher" | "teacher" | "student")[];
+  title: string;             // display title in the inbox (other party for that role)
+  subtitle?: string;
+  lastMessage: string;
+  lastTime: string;
+  unread: Partial<Record<"super-admin" | "admin" | "senior-teacher" | "teacher" | "student", number>>;
+};
+
 export type State = {
   students: Student[];
   teachers: Teacher[];
@@ -58,6 +78,8 @@ export type State = {
   notifLog: NotifLog[];
   institutions: Institution[];
   drawingTests: DrawingTest[];
+  threads: ChatThread[];
+  chatMessages: ChatMessage[];
 };
 
 let state: State = {
@@ -73,6 +95,24 @@ let state: State = {
   notifLog: [...seedNotifLog],
   institutions: [...seedInstitutions],
   drawingTests: [],
+  threads: [
+    { id: "TH1", participants: ["teacher", "student"], title: "Aarav Sharma", subtitle: "Student • LBA-1001", lastMessage: "Thank you ma'am!", lastTime: "10:07 AM", unread: { teacher: 2 } },
+    { id: "TH2", participants: ["teacher", "admin"], title: "Diya's Mom (Admin relay)", subtitle: "Parent inquiry", lastMessage: "Will she be at class today?", lastTime: "9:42 AM", unread: { teacher: 1, admin: 1 } },
+    { id: "TH3", participants: ["teacher", "senior-teacher"], title: "Anjali Verma", subtitle: "Senior Teacher", lastMessage: "Approved your request.", lastTime: "Yesterday", unread: {} },
+    { id: "TH4", participants: ["admin", "senior-teacher"], title: "Rahul Desai", subtitle: "Senior Teacher", lastMessage: "Please share the schedule.", lastTime: "Yesterday", unread: { admin: 1 } },
+    { id: "TH5", participants: ["admin", "student"], title: "Aarav Sharma", subtitle: "Fee follow-up", lastMessage: "Will pay by Friday.", lastTime: "2d ago", unread: {} },
+  ],
+  chatMessages: [
+    { id: "M1", threadId: "TH1", fromRole: "student", fromName: "Aarav Sharma", text: "Hi ma'am! When is the next watercolor class?", time: "10:02 AM" },
+    { id: "M2", threadId: "TH1", fromRole: "teacher", fromName: "Sneha Kulkarni", text: "Tomorrow at 4 PM, in studio 2 🎨", time: "10:04 AM" },
+    { id: "M3", threadId: "TH1", fromRole: "student", fromName: "Aarav Sharma", text: "Should I bring anything special?", time: "10:05 AM" },
+    { id: "M4", threadId: "TH1", fromRole: "teacher", fromName: "Sneha Kulkarni", text: "Just your apron and a smile! 😊", time: "10:06 AM" },
+    { id: "M5", threadId: "TH1", fromRole: "student", fromName: "Aarav Sharma", text: "Thank you ma'am!", time: "10:07 AM" },
+    { id: "M6", threadId: "TH3", fromRole: "senior-teacher", fromName: "Anjali Verma", text: "Approved your leave request.", time: "Yesterday" },
+    { id: "M7", threadId: "TH4", fromRole: "senior-teacher", fromName: "Rahul Desai", text: "Please share the schedule.", time: "Yesterday" },
+    { id: "M8", threadId: "TH5", fromRole: "student", fromName: "Aarav Sharma", text: "Will pay by Friday.", time: "2d ago" },
+    { id: "M9", threadId: "TH2", fromRole: "admin", fromName: "Anjali Verma", text: "Diya's mom asked: will she be at class today?", time: "9:42 AM" },
+  ],
 };
 
 const listeners = new Set<() => void>();
@@ -95,7 +135,7 @@ export const actions = {
     const id = `STU${String(1000 + state.students.length + 1).padStart(4, "0")}`;
     const badgeId = `LBA-${String(1000 + state.students.length + 1).padStart(4, "0")}`;
     const today = new Date().toISOString().slice(0, 10);
-    const s: Student = {
+    const s: any = {
       id, badgeId, name: input.name, age: input.age,
       class: (input.class as Student["class"]) || CLASSES[0],
       parent: input.parent || "—",
@@ -108,8 +148,14 @@ export const actions = {
       paidFee: 0,
       status: "Active",
       isBirthdayToday: false,
+      courseDurationMonths: (input as any).courseDurationMonths || 12,
+      courseEndDate: (() => {
+        const months = (input as any).courseDurationMonths || 12;
+        const d = new Date(); d.setMonth(d.getMonth() + months);
+        return d.toISOString().slice(0, 10);
+      })(),
     };
-    set(st => ({ students: [s, ...st.students] }));
+    set(st => ({ students: [s as Student, ...st.students] }));
     return s;
   },
   removeStudent(id: string) {
@@ -226,6 +272,46 @@ export const actions = {
     const i: Institution = { id, name: input.name, city: input.city, plan: input.plan, students: input.students || 0, status: "Trial" };
     set(st => ({ institutions: [i, ...st.institutions] }));
     return i;
+  },
+
+  // Chat
+  sendChatMessage(input: { threadId: string; fromRole: ChatMessage["fromRole"]; fromName: string; text: string }) {
+    if (!input.text.trim()) return;
+    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const m: ChatMessage = {
+      id: `M${Date.now().toString(36)}`,
+      threadId: input.threadId,
+      fromRole: input.fromRole,
+      fromName: input.fromName,
+      text: input.text.trim(),
+      time,
+    };
+    set(st => ({
+      chatMessages: [...st.chatMessages, m],
+      threads: st.threads.map(t => {
+        if (t.id !== input.threadId) return t;
+        const unread = { ...t.unread };
+        // Mark unread for every participant role except the sender
+        t.participants.forEach(role => {
+          if (role !== input.fromRole) unread[role] = (unread[role] || 0) + 1;
+        });
+        unread[input.fromRole] = 0;
+        return { ...t, lastMessage: m.text, lastTime: time, unread };
+      }),
+    }));
+    return m;
+  },
+  markThreadRead(threadId: string, role: ChatMessage["fromRole"]) {
+    set(st => ({
+      threads: st.threads.map(t => t.id === threadId ? { ...t, unread: { ...t.unread, [role]: 0 } } : t),
+    }));
+  },
+  createChatThread(input: { participants: ChatMessage["fromRole"][]; title: string; subtitle?: string }) {
+    const id = `TH${state.threads.length + 1}`;
+    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const t: ChatThread = { id, participants: input.participants, title: input.title, subtitle: input.subtitle, lastMessage: "—", lastTime: time, unread: {} };
+    set(st => ({ threads: [t, ...st.threads] }));
+    return t;
   },
 
   // Drawing tests

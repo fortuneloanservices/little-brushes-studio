@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Mail, Phone } from "lucide-react";
+import { Plus, Mail, Phone, Search } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Avatar } from "@/components/shared/Avatar";
 import { StatusPill } from "@/components/shared/StatusPill";
@@ -24,6 +24,15 @@ export default function Teachers() {
   const teachers = useStore(s => s.teachers);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", specialization: "", experience: "" });
+  const [q, setQ] = useState("");
+  const [filterSpec, setFilterSpec] = useState<string>("All");
+  const [filterRole, setFilterRole] = useState<string>("All");
+
+  const filtered = teachers
+    .filter(t => filterSpec === "All" || t.specialization === filterSpec)
+    .filter(t => filterRole === "All" || (filterRole === "Senior" ? t.isSenior : !t.isSenior))
+    .filter(t => !q || t.name.toLowerCase().includes(q.toLowerCase()) || t.email.toLowerCase().includes(q.toLowerCase()));
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -61,8 +70,33 @@ export default function Teachers() {
         }
       />
 
+      <div className="card-soft p-4 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Search teachers..." className="pl-9 rounded-xl" />
+        </div>
+        <Select value={filterSpec} onValueChange={setFilterSpec}>
+          <SelectTrigger className="rounded-xl sm:w-48"><SelectValue placeholder="Specialization" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All specializations</SelectItem>
+            {SPECIALIZATIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterRole} onValueChange={setFilterRole}>
+          <SelectTrigger className="rounded-xl sm:w-44"><SelectValue placeholder="Role" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All roles</SelectItem>
+            <SelectItem value="Senior">Senior teachers</SelectItem>
+            <SelectItem value="Teacher">Teachers</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {teachers.map(t => (
+        {filtered.length === 0 && (
+          <div className="card-soft p-10 text-center text-muted-foreground col-span-full">No teachers match filters</div>
+        )}
+        {filtered.map(t => (
           <div key={t.id} className="card-soft overflow-hidden hover:shadow-card transition-all hover:-translate-y-0.5">
             <div className={`h-20 bg-gradient-to-br ${TONE[t.specialization] || "from-primary to-secondary"} relative`}>
               <div className="absolute -bottom-7 left-4">

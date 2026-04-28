@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Wallet, Award, Clock, CreditCard, Download, Send } from "lucide-react";
+import { CalendarDays, Wallet, Award, Clock, CreditCard, Download, Send, AlarmClock } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { StatusPill } from "@/components/shared/StatusPill";
@@ -23,9 +23,22 @@ export function StudentDashboard() {
   const me = useMe();
   const att = makeAttendance(0);
   const pct = Math.round(att.filter(a => a.status === "Present").length / att.length * 100);
+  const courseEnd = (me as any).courseEndDate as string | undefined;
+  const daysLeft = courseEnd ? Math.ceil((new Date(courseEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+  const showReminder = daysLeft !== null && daysLeft >= 0 && daysLeft <= 30;
   return (
     <div className="space-y-6">
       <BirthdayBanner names={me.isBirthdayToday ? [me.name] : []} big />
+      {showReminder && (
+        <div className="card-soft p-4 border-l-4 border-warning bg-warning-soft/40 flex items-center gap-3">
+          <div className="rounded-lg bg-warning/20 p-2"><AlarmClock className="w-5 h-5 text-warning" /></div>
+          <div className="flex-1">
+            <div className="font-bold text-sm">Your course ends in {daysLeft} days</div>
+            <div className="text-xs text-muted-foreground">Renew with your teacher to keep painting with us 🎨</div>
+          </div>
+          <Button size="sm" className="rounded-lg gradient-primary text-white border-0" onClick={() => toast.success("Renewal request sent!")}>Renew</Button>
+        </div>
+      )}
       <div className="card-pop overflow-hidden">
         <div className="gradient-mint text-white p-6 sm:p-8">
           <div className="text-xs uppercase tracking-widest font-bold opacity-90">Welcome back</div>
