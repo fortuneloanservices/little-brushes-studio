@@ -26,6 +26,25 @@ type Certificate = typeof seedCerts[number];
 type NotifLog = typeof seedNotifLog[number];
 type Institution = typeof seedInstitutions[number];
 
+export type DrawingScore = { duration: number; neatness: number; art: number };
+export type DrawingTest = {
+  id: string;
+  title: string;
+  studentId: string;
+  studentName: string;
+  teacherName: string;
+  className: string;
+  teacherImage: string; // data URL
+  studentImage: string; // data URL
+  durationMinutes: number; // time student took
+  submittedAt: string;
+  status: "Pending Review" | "Scored";
+  studentScore?: DrawingScore;
+  teacherScore?: DrawingScore;
+  reviewerNotes?: string;
+  reviewedAt?: string;
+};
+
 export type State = {
   students: Student[];
   teachers: Teacher[];
@@ -38,6 +57,7 @@ export type State = {
   certificates: Certificate[];
   notifLog: NotifLog[];
   institutions: Institution[];
+  drawingTests: DrawingTest[];
 };
 
 let state: State = {
@@ -52,6 +72,7 @@ let state: State = {
   certificates: [...seedCerts],
   notifLog: [...seedNotifLog],
   institutions: [...seedInstitutions],
+  drawingTests: [],
 };
 
 const listeners = new Set<() => void>();
@@ -205,5 +226,36 @@ export const actions = {
     const i: Institution = { id, name: input.name, city: input.city, plan: input.plan, students: input.students || 0, status: "Trial" };
     set(st => ({ institutions: [i, ...st.institutions] }));
     return i;
+  },
+
+  // Drawing tests
+  submitDrawingTest(input: {
+    title: string;
+    studentId: string;
+    studentName: string;
+    teacherName: string;
+    className: string;
+    teacherImage: string;
+    studentImage: string;
+    durationMinutes: number;
+  }) {
+    const id = `DT${String(state.drawingTests.length + 1).padStart(3, "0")}`;
+    const t: DrawingTest = {
+      id,
+      ...input,
+      submittedAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+      status: "Pending Review",
+    };
+    set(st => ({ drawingTests: [t, ...st.drawingTests] }));
+    return t;
+  },
+  scoreDrawingTest(id: string, input: { studentScore: DrawingScore; teacherScore: DrawingScore; notes?: string }) {
+    set(st => ({
+      drawingTests: st.drawingTests.map(t =>
+        t.id === id
+          ? { ...t, ...input, reviewerNotes: input.notes, status: "Scored", reviewedAt: new Date().toISOString().slice(0, 16).replace("T", " ") }
+          : t,
+      ),
+    }));
   },
 };

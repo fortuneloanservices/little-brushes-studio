@@ -8,7 +8,7 @@ import { RoleLayout, RequireRole, NavItem } from "@/components/layouts/RoleLayou
 import {
   LayoutDashboard, Building2, CreditCard, Settings as SettingsIcon, BarChart3,
   Users, GraduationCap, ClipboardCheck, Sparkles, Wallet, Boxes, Award, Bell,
-  CalendarDays, MessageSquare, CalendarOff, BookOpen, ClipboardList, FileText,
+  CalendarDays, MessageSquare, CalendarOff, BookOpen, ClipboardList, FileText, Palette, Star,
 } from "lucide-react";
 
 import Index from "./pages/Index";
@@ -34,6 +34,8 @@ import Notifications from "./pages/admin/Notifications";
 import { SeniorDashboard, ClassApprovals, LeaveApprovals, MyClasses as SeniorMyClasses, ChatPage } from "./pages/senior-teacher/SeniorTeacherPages";
 import { TeacherDashboard, TeacherSlotRequests, TeacherAttendance, TeacherLeave, TeacherMyClasses, ChatPage as TeacherChat } from "./pages/teacher/TeacherPages";
 import { StudentDashboard, MyClassesStudent, RequestSlot, StudentAttendance, StudentFees, StudentCertificates, ChatPage as StudentChat } from "./pages/student/StudentPages";
+import { TeacherDrawingTests, SeniorDrawingReviews, StudentMyScores } from "./pages/shared/DrawingTests";
+import { useStore } from "@/store/dataStore";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +62,7 @@ const seniorNav: NavItem[] = [
   { to: "/senior-teacher", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/senior-teacher/class-approvals", label: "Class Approvals", icon: ClipboardCheck },
   { to: "/senior-teacher/leave-approvals", label: "Leave Approvals", icon: CalendarOff },
+  { to: "/senior-teacher/drawing-reviews", label: "Drawing Reviews", icon: Palette },
   { to: "/senior-teacher/classes", label: "My Classes", icon: CalendarDays },
   { to: "/senior-teacher/chat", label: "Chat", icon: MessageSquare },
 ];
@@ -67,6 +70,7 @@ const teacherNav: NavItem[] = [
   { to: "/teacher", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/teacher/classes", label: "My Classes", icon: CalendarDays },
   { to: "/teacher/attendance", label: "Attendance", icon: ClipboardCheck },
+  { to: "/teacher/drawing-tests", label: "Drawing Tests", icon: Palette },
   { to: "/teacher/slot-requests", label: "Slot Requests", icon: ClipboardList },
   { to: "/teacher/leave", label: "Leave", icon: CalendarOff },
   { to: "/teacher/chat", label: "Chat", icon: MessageSquare },
@@ -74,6 +78,7 @@ const teacherNav: NavItem[] = [
 const studentNav: NavItem[] = [
   { to: "/student", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/student/classes", label: "My Classes", icon: CalendarDays },
+  { to: "/student/scores", label: "My Scores", icon: Star },
   { to: "/student/request-slot", label: "Request Slot", icon: ClipboardList },
   { to: "/student/attendance", label: "Attendance", icon: ClipboardCheck },
   { to: "/student/fees", label: "Fees", icon: Wallet },
@@ -117,6 +122,7 @@ const App = () => (
               <Route path="/senior-teacher" element={<SeniorDashboard />} />
               <Route path="/senior-teacher/class-approvals" element={<ClassApprovals />} />
               <Route path="/senior-teacher/leave-approvals" element={<LeaveApprovals />} />
+              <Route path="/senior-teacher/drawing-reviews" element={<SeniorDrawingReviews />} />
               <Route path="/senior-teacher/classes" element={<SeniorMyClasses />} />
               <Route path="/senior-teacher/chat" element={<ChatPage />} />
             </Route>
@@ -125,6 +131,7 @@ const App = () => (
               <Route path="/teacher" element={<TeacherDashboard />} />
               <Route path="/teacher/classes" element={<TeacherMyClasses />} />
               <Route path="/teacher/attendance" element={<TeacherAttendance />} />
+              <Route path="/teacher/drawing-tests" element={<TeacherDrawingTests />} />
               <Route path="/teacher/slot-requests" element={<TeacherSlotRequests />} />
               <Route path="/teacher/leave" element={<TeacherLeave />} />
               <Route path="/teacher/chat" element={<TeacherChat />} />
@@ -133,6 +140,7 @@ const App = () => (
             <Route element={<RequireRole role="student"><RoleLayout navItems={studentNav} role="student" /></RequireRole>}>
               <Route path="/student" element={<StudentDashboard />} />
               <Route path="/student/classes" element={<MyClassesStudent />} />
+              <Route path="/student/scores" element={<StudentScoresRoute />} />
               <Route path="/student/request-slot" element={<RequestSlot />} />
               <Route path="/student/attendance" element={<StudentAttendance />} />
               <Route path="/student/fees" element={<StudentFees />} />
@@ -149,3 +157,10 @@ const App = () => (
 );
 
 export default App;
+
+// Bridge so the student "scores" route uses the same "current student" the rest of the
+// student portal uses (the first student in the store).
+function StudentScoresRoute() {
+  const studentId = useStore(s => s.students[0]?.id ?? "");
+  return <StudentMyScores studentId={studentId} />;
+}
