@@ -45,6 +45,26 @@ export type DrawingTest = {
   reviewedAt?: string;
 };
 
+export type ChatMessage = {
+  id: string;
+  threadId: string;
+  fromRole: "super-admin" | "admin" | "senior-teacher" | "teacher" | "student";
+  fromName: string;
+  text: string;
+  time: string;
+};
+
+export type ChatThread = {
+  id: string;
+  // participants are role identifiers — the thread shows up in any matching role inbox
+  participants: ("super-admin" | "admin" | "senior-teacher" | "teacher" | "student")[];
+  title: string;             // display title in the inbox (other party for that role)
+  subtitle?: string;
+  lastMessage: string;
+  lastTime: string;
+  unread: Partial<Record<"super-admin" | "admin" | "senior-teacher" | "teacher" | "student", number>>;
+};
+
 export type State = {
   students: Student[];
   teachers: Teacher[];
@@ -58,6 +78,8 @@ export type State = {
   notifLog: NotifLog[];
   institutions: Institution[];
   drawingTests: DrawingTest[];
+  threads: ChatThread[];
+  chatMessages: ChatMessage[];
 };
 
 let state: State = {
@@ -73,6 +95,24 @@ let state: State = {
   notifLog: [...seedNotifLog],
   institutions: [...seedInstitutions],
   drawingTests: [],
+  threads: [
+    { id: "TH1", participants: ["teacher", "student"], title: "Aarav Sharma", subtitle: "Student • LBA-1001", lastMessage: "Thank you ma'am!", lastTime: "10:07 AM", unread: { teacher: 2 } },
+    { id: "TH2", participants: ["teacher", "admin"], title: "Diya's Mom (Admin relay)", subtitle: "Parent inquiry", lastMessage: "Will she be at class today?", lastTime: "9:42 AM", unread: { teacher: 1, admin: 1 } },
+    { id: "TH3", participants: ["teacher", "senior-teacher"], title: "Anjali Verma", subtitle: "Senior Teacher", lastMessage: "Approved your request.", lastTime: "Yesterday", unread: {} },
+    { id: "TH4", participants: ["admin", "senior-teacher"], title: "Rahul Desai", subtitle: "Senior Teacher", lastMessage: "Please share the schedule.", lastTime: "Yesterday", unread: { admin: 1 } },
+    { id: "TH5", participants: ["admin", "student"], title: "Aarav Sharma", subtitle: "Fee follow-up", lastMessage: "Will pay by Friday.", lastTime: "2d ago", unread: {} },
+  ],
+  chatMessages: [
+    { id: "M1", threadId: "TH1", fromRole: "student", fromName: "Aarav Sharma", text: "Hi ma'am! When is the next watercolor class?", time: "10:02 AM" },
+    { id: "M2", threadId: "TH1", fromRole: "teacher", fromName: "Sneha Kulkarni", text: "Tomorrow at 4 PM, in studio 2 🎨", time: "10:04 AM" },
+    { id: "M3", threadId: "TH1", fromRole: "student", fromName: "Aarav Sharma", text: "Should I bring anything special?", time: "10:05 AM" },
+    { id: "M4", threadId: "TH1", fromRole: "teacher", fromName: "Sneha Kulkarni", text: "Just your apron and a smile! 😊", time: "10:06 AM" },
+    { id: "M5", threadId: "TH1", fromRole: "student", fromName: "Aarav Sharma", text: "Thank you ma'am!", time: "10:07 AM" },
+    { id: "M6", threadId: "TH3", fromRole: "senior-teacher", fromName: "Anjali Verma", text: "Approved your leave request.", time: "Yesterday" },
+    { id: "M7", threadId: "TH4", fromRole: "senior-teacher", fromName: "Rahul Desai", text: "Please share the schedule.", time: "Yesterday" },
+    { id: "M8", threadId: "TH5", fromRole: "student", fromName: "Aarav Sharma", text: "Will pay by Friday.", time: "2d ago" },
+    { id: "M9", threadId: "TH2", fromRole: "admin", fromName: "Anjali Verma", text: "Diya's mom asked: will she be at class today?", time: "9:42 AM" },
+  ],
 };
 
 const listeners = new Set<() => void>();
