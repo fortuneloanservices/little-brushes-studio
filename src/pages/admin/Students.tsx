@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Eye } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Eye, Search, AlarmClock } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusPill } from "@/components/shared/StatusPill";
@@ -21,7 +21,31 @@ export default function Students() {
   const payments = useStore(s => s.payments);
   const [selected, setSelected] = useState<typeof students[number] | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", age: "", class: "", parent: "", phone: "", dob: "" });
+  const [form, setForm] = useState({ name: "", age: "", class: "", parent: "", phone: "", dob: "", duration: "12" });
+  const [q, setQ] = useState("");
+  const [filterClass, setFilterClass] = useState<string>("All");
+  const [filterFee, setFilterFee] = useState<string>("All");
+
+  // Reminders: students with course ending in <= 30 days
+  const endingSoon = useMemo(() => {
+    const now = Date.now();
+    return students.filter(s => {
+      const end = (s as any).courseEndDate;
+      if (!end) return false;
+      const ms = new Date(end).getTime() - now;
+      const days = ms / (1000 * 60 * 60 * 24);
+      return days >= 0 && days <= 30;
+    }).map(s => {
+      const end = (s as any).courseEndDate as string;
+      const days = Math.ceil((new Date(end).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      return { ...s, daysLeft: days };
+    });
+  }, [students]);
+
+  const filtered = students
+    .filter(s => filterClass === "All" || s.class === filterClass)
+    .filter(s => filterFee === "All" || s.feeStatus === filterFee)
+    .filter(s => !q || s.name.toLowerCase().includes(q.toLowerCase()) || s.badgeId.toLowerCase().includes(q.toLowerCase()) || (s.parent ?? "").toLowerCase().includes(q.toLowerCase()));
 
   return (
     <div className="space-y-6">
@@ -38,10 +62,10 @@ export default function Students() {
               <form className="space-y-4 mt-6" onSubmit={e => {
                 e.preventDefault();
                 if (!form.name) return;
-                actions.addStudent({ name: form.name, age: Number(form.age) || 8, class: form.class || CLASSES[1], parent: form.parent, phone: form.phone, dob: form.dob });
+                actions.addStudent({ name: form.name, age: Number(form.age) || 8, class: form.class || CLASSES[1], parent: form.parent, phone: form.phone, dob: form.dob, courseDurationMonths: Number(form.duration) || 12 } as any);
                 toast.success("Student added — synced everywhere!");
                 setAddOpen(false);
-                setForm({ name: "", age: "", class: "", parent: "", phone: "", dob: "" });
+                setForm({ name: "", age: "", class: "", parent: "", phone: "", dob: "", duration: "12" });
               }}>
                 <div className="space-y-1.5"><Label>Full name</Label><Input placeholder="e.g. Aarav Sharma" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
                 <div className="grid grid-cols-2 gap-3">
@@ -56,12 +80,64 @@ export default function Students() {
                 <div className="space-y-1.5"><Label>Parent's name</Label><Input placeholder="Parent name" value={form.parent} onChange={e => setForm(f => ({ ...f, parent: e.target.value }))} /></div>
                 <div className="space-y-1.5"><Label>Phone</Label><Input placeholder="+91 ..." value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
                 <div className="space-y-1.5"><Label>Date of birth</Label><Input type="date" value={form.dob} onChange={e => setForm(f => ({ ...f, dob: e.target.value }))} /></div>
+                <div className="space-y-1.5">
+                  <Label>Course duration (months)</Label>
+                  <Select value={form.duration} onValueChange={v => setForm(f => ({ ...f, duration: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["3", "6", "9", "12", "18", "24"].map(m => <SelectItem key={m} value={m}>{m} months</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <div className="text-[11px] text-muted-foreground">Reminders sent 30 days before completion.</div>
+                </div>
                 <Button type="submit" className="w-full rounded-xl gradient-primary text-white border-0">Add Student</Button>
               </form>
             </SheetContent>
           </Sheet>
         }
       />
+
+      {endingSoon.length > 0 && (
+        <div className="card-soft p-4 border-l-4 border-warning bg-warning-soft/40">
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg bg-warning/20 p-2"><AlarmClock className="w-5 h-5 text-warning" /></div>
+            <div className="flex-1">
+              <div className="font-bold text-sm">Course ending soon — {endingSoon.length} student{endingSoon.length > 1 ? "s" : ""}</div>
+              <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-2">
+                {endingSoon.slice(0, 6).map(s => (
+                  <span key={s.id} className="rounded-full bg-card border border-border px-2 py-0.5">
+                    {s.name} • {s.daysLeft}d left
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Button size="sm" variant="outline" className="rounded-lg" onClick={() => toast.success(`Renewal reminders sent to ${endingSoon.length} parents`)}>Send reminders</Button>
+          </div>
+        </div>
+      )}
+
+      <div className="card-soft p-4 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Search by name, badge or parent..." className="pl-9 rounded-xl" />
+        </div>
+        <Select value={filterClass} onValueChange={setFilterClass}>
+          <SelectTrigger className="rounded-xl sm:w-48"><SelectValue placeholder="Class" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All classes</SelectItem>
+            {CLASSES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterFee} onValueChange={setFilterFee}>
+          <SelectTrigger className="rounded-xl sm:w-40"><SelectValue placeholder="Fee" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All fees</SelectItem>
+            <SelectItem value="Paid">Paid</SelectItem>
+            <SelectItem value="Pending">Pending</SelectItem>
+            <SelectItem value="Overdue">Overdue</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <DataTable
         columns={[
@@ -76,12 +152,18 @@ export default function Students() {
           )},
           { key: "badgeId", header: "Badge ID", render: r => <span className="font-mono text-xs font-bold bg-muted px-2 py-1 rounded">{r.badgeId}</span> },
           { key: "class", header: "Class" },
+          { key: "courseEndDate", header: "Course ends", render: r => {
+            const end = (r as any).courseEndDate;
+            if (!end) return <span className="text-muted-foreground text-xs">—</span>;
+            const days = Math.ceil((new Date(end).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+            const tone = days <= 30 ? "text-warning font-bold" : "text-muted-foreground";
+            return <div className="text-xs"><div>{end}</div><div className={tone}>{days >= 0 ? `${days}d left` : "Ended"}</div></div>;
+          }},
           { key: "parent", header: "Parent" },
           { key: "feeStatus", header: "Fee", render: r => <StatusPill status={r.feeStatus} /> },
           { key: "x", header: "", render: r => <Button variant="ghost" size="sm" onClick={() => setSelected(r)}><Eye className="w-4 h-4" /></Button> },
         ]}
-        rows={students}
-        searchKeys={["name", "badgeId", "parent"]}
+        rows={filtered}
       />
 
       <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
