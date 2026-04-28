@@ -8,7 +8,7 @@ import { RoleLayout, RequireRole, NavItem } from "@/components/layouts/RoleLayou
 import {
   LayoutDashboard, Building2, CreditCard, Settings as SettingsIcon, BarChart3,
   Users, GraduationCap, ClipboardCheck, Sparkles, Wallet, Boxes, Award, Bell,
-  CalendarDays, MessageSquare, CalendarOff, BookOpen, ClipboardList, FileText, Palette, Star,
+  CalendarDays, MessageSquare, CalendarOff, BookOpen, ClipboardList, FileText, Palette, Star, TrendingUp,
 } from "lucide-react";
 
 import Index from "./pages/Index";
@@ -35,6 +35,8 @@ import { SeniorDashboard, ClassApprovals, LeaveApprovals, MyClasses as SeniorMyC
 import { TeacherDashboard, TeacherSlotRequests, TeacherAttendance, TeacherLeave, TeacherMyClasses, ChatPage as TeacherChat } from "./pages/teacher/TeacherPages";
 import { StudentDashboard, MyClassesStudent, RequestSlot, StudentAttendance, StudentFees, StudentCertificates, ChatPage as StudentChat } from "./pages/student/StudentPages";
 import { TeacherDrawingTests, SeniorDrawingReviews, StudentMyScores } from "./pages/shared/DrawingTests";
+import { ProgressReports } from "./pages/shared/ProgressReports";
+import { Chat as SharedChat } from "./pages/shared/Chat";
 import { useStore } from "@/store/dataStore";
 
 const queryClient = new QueryClient();
@@ -51,12 +53,14 @@ const adminNav: NavItem[] = [
   { to: "/admin/students", label: "Students", icon: Users },
   { to: "/admin/teachers", label: "Teachers", icon: GraduationCap },
   { to: "/admin/attendance", label: "Attendance", icon: ClipboardCheck },
+  { to: "/admin/progress", label: "Progress Reports", icon: TrendingUp },
   { to: "/admin/crm", label: "CRM Leads", icon: Sparkles },
   { to: "/admin/payroll", label: "HR & Payroll", icon: Wallet },
   { to: "/admin/inventory", label: "Inventory", icon: Boxes },
   { to: "/admin/billing", label: "Billing", icon: CreditCard },
   { to: "/admin/certificates", label: "Certificates", icon: Award },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
+  { to: "/admin/chat", label: "Chat", icon: MessageSquare },
 ];
 const seniorNav: NavItem[] = [
   { to: "/senior-teacher", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -71,6 +75,7 @@ const teacherNav: NavItem[] = [
   { to: "/teacher/classes", label: "My Classes", icon: CalendarDays },
   { to: "/teacher/attendance", label: "Attendance", icon: ClipboardCheck },
   { to: "/teacher/drawing-tests", label: "Drawing Tests", icon: Palette },
+  { to: "/teacher/progress", label: "Student Progress", icon: TrendingUp },
   { to: "/teacher/slot-requests", label: "Slot Requests", icon: ClipboardList },
   { to: "/teacher/leave", label: "Leave", icon: CalendarOff },
   { to: "/teacher/chat", label: "Chat", icon: MessageSquare },
@@ -110,12 +115,14 @@ const App = () => (
               <Route path="/admin/students" element={<Students />} />
               <Route path="/admin/teachers" element={<Teachers />} />
               <Route path="/admin/attendance" element={<Attendance />} />
+              <Route path="/admin/progress" element={<ProgressReports scope="admin" />} />
               <Route path="/admin/crm" element={<CRM />} />
               <Route path="/admin/payroll" element={<Payroll />} />
               <Route path="/admin/inventory" element={<Inventory />} />
               <Route path="/admin/billing" element={<Billing />} />
               <Route path="/admin/certificates" element={<Certificates />} />
               <Route path="/admin/notifications" element={<Notifications />} />
+              <Route path="/admin/chat" element={<SharedChat />} />
             </Route>
 
             <Route element={<RequireRole role="senior-teacher"><RoleLayout navItems={seniorNav} role="senior-teacher" /></RequireRole>}>
@@ -132,6 +139,7 @@ const App = () => (
               <Route path="/teacher/classes" element={<TeacherMyClasses />} />
               <Route path="/teacher/attendance" element={<TeacherAttendance />} />
               <Route path="/teacher/drawing-tests" element={<TeacherDrawingTests />} />
+              <Route path="/teacher/progress" element={<ProgressReports scope="teacher" />} />
               <Route path="/teacher/slot-requests" element={<TeacherSlotRequests />} />
               <Route path="/teacher/leave" element={<TeacherLeave />} />
               <Route path="/teacher/chat" element={<TeacherChat />} />
