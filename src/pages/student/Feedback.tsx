@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Star, Send, MessageSquareHeart } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,11 @@ function StarRow({ value, onChange }: { value: number; onChange: (n: number) => 
 export function StudentFeedback() {
   const me = useStore(s => s.students[0]);
   const teachers = useStore(s => s.teachers);
-  const myFeedbacks = useStore(s => s.feedbacks.filter(f => f.studentId === me?.id));
+  const allFeedbacks = useStore(s => s.feedbacks);
+  const myFeedbacks = useMemo(
+    () => allFeedbacks.filter(f => f.studentId === me?.id),
+    [allFeedbacks, me?.id],
+  );
 
   const [parentName, setParentName] = useState(me?.parent || "");
   const [teacherName, setTeacherName] = useState(teachers[0]?.name || "");
