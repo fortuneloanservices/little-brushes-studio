@@ -54,6 +54,34 @@ export type ChatMessage = {
   time: string;
 };
 
+export type FeedbackRatings = {
+  teaching: number;
+  communication: number;
+  artisticGrowth: number;
+  classroom: number;
+  variety: number;
+  value: number;
+};
+export type ParentFeedback = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  parentName: string;
+  teacherName: string;
+  ratings: FeedbackRatings;
+  instructorImpression: string;
+  motivated: "Yes" | "Sometimes" | "No";
+  motivatedExplain: string;
+  informed: "Yes" | "No" | "Somewhat";
+  communicationSuggestions: string;
+  appreciate: string;
+  improve: string;
+  recommend: "Yes" | "Maybe" | "No";
+  additional: string;
+  submittedAt: string;
+  status: "New" | "Reviewed";
+};
+
 export type ChatThread = {
   id: string;
   // participants are role identifiers — the thread shows up in any matching role inbox
@@ -80,6 +108,7 @@ export type State = {
   drawingTests: DrawingTest[];
   threads: ChatThread[];
   chatMessages: ChatMessage[];
+  feedbacks: ParentFeedback[];
 };
 
 let state: State = {
@@ -113,6 +142,7 @@ let state: State = {
     { id: "M8", threadId: "TH5", fromRole: "student", fromName: "Aarav Sharma", text: "Will pay by Friday.", time: "2d ago" },
     { id: "M9", threadId: "TH2", fromRole: "admin", fromName: "Anjali Verma", text: "Diya's mom asked: will she be at class today?", time: "9:42 AM" },
   ],
+  feedbacks: [],
 };
 
 const listeners = new Set<() => void>();
@@ -343,5 +373,21 @@ export const actions = {
           : t,
       ),
     }));
+  },
+
+  // Parent feedback
+  submitFeedback(input: Omit<ParentFeedback, "id" | "submittedAt" | "status">) {
+    const id = `FB${String(state.feedbacks.length + 1).padStart(3, "0")}`;
+    const f: ParentFeedback = {
+      ...input,
+      id,
+      submittedAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+      status: "New",
+    };
+    set(st => ({ feedbacks: [f, ...st.feedbacks] }));
+    return f;
+  },
+  markFeedbackReviewed(id: string) {
+    set(st => ({ feedbacks: st.feedbacks.map(f => f.id === id ? { ...f, status: "Reviewed" } : f) }));
   },
 };
