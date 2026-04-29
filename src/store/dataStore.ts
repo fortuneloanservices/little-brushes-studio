@@ -161,14 +161,34 @@ export function useStore<T>(selector: (s: State) => T): T {
 // ---------- Actions ----------
 export const actions = {
   // Students
-  addStudent(input: { name: string; age: number; class: string; parent?: string; phone?: string; email?: string; dob?: string }) {
+  addStudent(input: {
+    name: string; age: number; class: string;
+    parent?: string; phone?: string; email?: string; dob?: string;
+    photo?: string;
+    bloodGroup?: string;
+    gender?: string;
+    school?: string;
+    college?: string;
+    occupation?: string;
+    fatherName?: string;
+    fatherMobile?: string;
+    motherName?: string;
+    motherMobile?: string;
+    address?: string;
+    currentCourse?: string;
+    batchDays?: string;
+    batchTime?: string;
+    artTeacher?: string;
+    vanFacility?: boolean;
+    courseDurationMonths?: number;
+  }) {
     const id = `STU${String(1000 + state.students.length + 1).padStart(4, "0")}`;
     const badgeId = `LBA-${String(1000 + state.students.length + 1).padStart(4, "0")}`;
     const today = new Date().toISOString().slice(0, 10);
     const s: any = {
       id, badgeId, name: input.name, age: input.age,
       class: (input.class as Student["class"]) || CLASSES[0],
-      parent: input.parent || "—",
+      parent: input.parent || input.fatherName || input.motherName || "—",
       phone: input.phone || "",
       email: input.email || `${input.name.toLowerCase().replace(/\s+/g, ".")}@kid.in`,
       dob: input.dob || today,
@@ -178,9 +198,25 @@ export const actions = {
       paidFee: 0,
       status: "Active",
       isBirthdayToday: false,
-      courseDurationMonths: (input as any).courseDurationMonths || 12,
+      photo: input.photo || "",
+      bloodGroup: input.bloodGroup || "",
+      gender: input.gender || "",
+      school: input.school || "",
+      college: input.college || "",
+      occupation: input.occupation || "",
+      fatherName: input.fatherName || "",
+      fatherMobile: input.fatherMobile || "",
+      motherName: input.motherName || "",
+      motherMobile: input.motherMobile || "",
+      address: input.address || "",
+      currentCourse: input.currentCourse || "",
+      batchDays: input.batchDays || "",
+      batchTime: input.batchTime || "",
+      artTeacher: input.artTeacher || "",
+      vanFacility: !!input.vanFacility,
+      courseDurationMonths: input.courseDurationMonths || 12,
       courseEndDate: (() => {
-        const months = (input as any).courseDurationMonths || 12;
+        const months = input.courseDurationMonths || 12;
         const d = new Date(); d.setMonth(d.getMonth() + months);
         return d.toISOString().slice(0, 10);
       })(),
