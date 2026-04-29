@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Plus, Eye, Search, AlarmClock } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Plus, Eye, Search, AlarmClock, Upload, User } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusPill } from "@/components/shared/StatusPill";
@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CLASSES, makeAttendance } from "@/data/mockData";
 import { useStore, actions } from "@/store/dataStore";
 import { toast } from "sonner";
@@ -19,9 +21,20 @@ export default function Students() {
   const students = useStore(s => s.students);
   const certificates = useStore(s => s.certificates);
   const payments = useStore(s => s.payments);
+  const teachers = useStore(s => s.teachers);
   const [selected, setSelected] = useState<typeof students[number] | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", age: "", class: "", parent: "", phone: "", dob: "", duration: "12" });
+  const blankForm = {
+    photo: "", name: "", dob: "", age: "", bloodGroup: "", gender: "",
+    school: "", college: "", occupation: "",
+    fatherName: "", fatherMobile: "",
+    motherName: "", motherMobile: "",
+    address: "",
+    class: "", currentCourse: "", batchDays: "", batchTime: "",
+    duration: "12", artTeacher: "", vanFacility: false,
+  };
+  const [form, setForm] = useState(blankForm);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState("");
   const [filterClass, setFilterClass] = useState<string>("All");
   const [filterFee, setFilterFee] = useState<string>("All");
@@ -57,39 +70,136 @@ export default function Students() {
             <SheetTrigger asChild>
               <Button className="rounded-xl gradient-primary text-white border-0 shadow-pop"><Plus className="w-4 h-4 mr-1" />Add Student</Button>
             </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-md">
-              <SheetHeader><SheetTitle>Add new student</SheetTitle></SheetHeader>
-              <form className="space-y-4 mt-6" onSubmit={e => {
+            <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+              <SheetHeader><SheetTitle>Student Enrollment Form</SheetTitle></SheetHeader>
+              <form className="space-y-6 mt-6 pb-10" onSubmit={e => {
                 e.preventDefault();
-                if (!form.name) return;
-                actions.addStudent({ name: form.name, age: Number(form.age) || 8, class: form.class || CLASSES[1], parent: form.parent, phone: form.phone, dob: form.dob, courseDurationMonths: Number(form.duration) || 12 } as any);
+                if (!form.name.trim()) return toast.error("Student name is required");
+                actions.addStudent({
+                  name: form.name.trim(),
+                  age: Number(form.age) || 8,
+                  class: form.class || CLASSES[1],
+                  parent: form.fatherName || form.motherName,
+                  phone: form.fatherMobile || form.motherMobile,
+                  dob: form.dob,
+                  courseDurationMonths: Number(form.duration) || 12,
+                  photo: form.photo,
+                  bloodGroup: form.bloodGroup,
+                  gender: form.gender,
+                  school: form.school,
+                  college: form.college,
+                  occupation: form.occupation,
+                  fatherName: form.fatherName,
+                  fatherMobile: form.fatherMobile,
+                  motherName: form.motherName,
+                  motherMobile: form.motherMobile,
+                  address: form.address,
+                  currentCourse: form.currentCourse || form.class,
+                  batchDays: form.batchDays,
+                  batchTime: form.batchTime,
+                  artTeacher: form.artTeacher,
+                  vanFacility: form.vanFacility,
+                });
                 toast.success("Student added — synced everywhere!");
                 setAddOpen(false);
-                setForm({ name: "", age: "", class: "", parent: "", phone: "", dob: "", duration: "12" });
+                setForm(blankForm);
               }}>
-                <div className="space-y-1.5"><Label>Full name</Label><Input placeholder="e.g. Aarav Sharma" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5"><Label>Age</Label><Input type="number" placeholder="8" required value={form.age} onChange={e => setForm(f => ({ ...f, age: e.target.value }))} /></div>
-                  <div className="space-y-1.5">
-                    <Label>Class</Label>
-                    <Select value={form.class} onValueChange={v => setForm(f => ({ ...f, class: v }))}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{CLASSES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                    </Select>
+                {/* Personal */}
+                <FormSection title="Personal Details">
+                  <div className="flex items-start gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Photo</Label>
+                      <button type="button" onClick={() => fileRef.current?.click()} className="w-24 h-28 rounded-xl border-2 border-dashed border-border bg-muted/40 grid place-items-center overflow-hidden hover:bg-muted transition-colors">
+                        {form.photo
+                          ? <img src={form.photo} alt="student" className="w-full h-full object-cover" />
+                          : <div className="text-center text-muted-foreground"><Upload className="w-5 h-5 mx-auto mb-1" /><div className="text-[10px]">Upload</div></div>}
+                      </button>
+                      <input ref={fileRef} type="file" accept="image/*" hidden onChange={e => {
+                        const f = e.target.files?.[0]; if (!f) return;
+                        const r = new FileReader(); r.onload = () => setForm(s => ({ ...s, photo: String(r.result) })); r.readAsDataURL(f);
+                      }} />
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div className="space-y-1.5"><Label>Student name *</Label><Input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5"><Label>Date of birth</Label><Input type="date" value={form.dob} onChange={e => setForm(f => ({ ...f, dob: e.target.value }))} /></div>
+                        <div className="space-y-1.5"><Label>Age</Label><Input type="number" min={3} max={80} value={form.age} onChange={e => setForm(f => ({ ...f, age: e.target.value }))} /></div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-1.5"><Label>Parent's name</Label><Input placeholder="Parent name" value={form.parent} onChange={e => setForm(f => ({ ...f, parent: e.target.value }))} /></div>
-                <div className="space-y-1.5"><Label>Phone</Label><Input placeholder="+91 ..." value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
-                <div className="space-y-1.5"><Label>Date of birth</Label><Input type="date" value={form.dob} onChange={e => setForm(f => ({ ...f, dob: e.target.value }))} /></div>
-                <div className="space-y-1.5">
-                  <Label>Course duration (months)</Label>
-                  <Select value={form.duration} onValueChange={v => setForm(f => ({ ...f, duration: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["3", "6", "9", "12", "18", "24"].map(m => <SelectItem key={m} value={m}>{m} months</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <div className="text-[11px] text-muted-foreground">Reminders sent 30 days before completion.</div>
-                </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Blood group</Label>
+                      <Select value={form.bloodGroup} onValueChange={v => setForm(f => ({ ...f, bloodGroup: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>{["A+","A-","B+","B-","AB+","AB-","O+","O-"].map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Gender</Label>
+                      <Select value={form.gender} onValueChange={v => setForm(f => ({ ...f, gender: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>{["Male","Female","Other"].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </FormSection>
+
+                {/* Education / Work */}
+                <FormSection title="Education & Occupation">
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    <div className="space-y-1.5"><Label>School</Label><Input value={form.school} onChange={e => setForm(f => ({ ...f, school: e.target.value }))} /></div>
+                    <div className="space-y-1.5"><Label>College</Label><Input value={form.college} onChange={e => setForm(f => ({ ...f, college: e.target.value }))} /></div>
+                    <div className="space-y-1.5"><Label>Occupation</Label><Input value={form.occupation} onChange={e => setForm(f => ({ ...f, occupation: e.target.value }))} /></div>
+                  </div>
+                </FormSection>
+
+                {/* Parents */}
+                <FormSection title="Parents / Guardian">
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5"><Label>Father's name</Label><Input value={form.fatherName} onChange={e => setForm(f => ({ ...f, fatherName: e.target.value }))} /></div>
+                    <div className="space-y-1.5"><Label>Father's mobile</Label><Input value={form.fatherMobile} onChange={e => setForm(f => ({ ...f, fatherMobile: e.target.value }))} /></div>
+                    <div className="space-y-1.5"><Label>Mother's name</Label><Input value={form.motherName} onChange={e => setForm(f => ({ ...f, motherName: e.target.value }))} /></div>
+                    <div className="space-y-1.5"><Label>Mother's mobile</Label><Input value={form.motherMobile} onChange={e => setForm(f => ({ ...f, motherMobile: e.target.value }))} /></div>
+                  </div>
+                  <div className="space-y-1.5"><Label>Address</Label><Textarea rows={2} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
+                </FormSection>
+
+                {/* Course */}
+                <FormSection title="Course Details">
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Class</Label>
+                      <Select value={form.class} onValueChange={v => setForm(f => ({ ...f, class: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>{CLASSES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5"><Label>Current course</Label><Input placeholder="e.g. Watercolor Basics" value={form.currentCourse} onChange={e => setForm(f => ({ ...f, currentCourse: e.target.value }))} /></div>
+                    <div className="space-y-1.5"><Label>Batch days</Label><Input placeholder="e.g. Mon, Wed, Fri" value={form.batchDays} onChange={e => setForm(f => ({ ...f, batchDays: e.target.value }))} /></div>
+                    <div className="space-y-1.5"><Label>Batch time</Label><Input placeholder="e.g. 4:00 - 5:30 PM" value={form.batchTime} onChange={e => setForm(f => ({ ...f, batchTime: e.target.value }))} /></div>
+                    <div className="space-y-1.5">
+                      <Label>Duration</Label>
+                      <Select value={form.duration} onValueChange={v => setForm(f => ({ ...f, duration: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{["3","6","9","12","18","24"].map(m => <SelectItem key={m} value={m}>{m} months</SelectItem>)}</SelectContent>
+                      </Select>
+                      <div className="text-[11px] text-muted-foreground">Reminders sent 30 days before completion.</div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Art teacher</Label>
+                      <Select value={form.artTeacher} onValueChange={v => setForm(f => ({ ...f, artTeacher: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
+                        <SelectContent>{teachers.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 mt-1 cursor-pointer">
+                    <Checkbox checked={form.vanFacility} onCheckedChange={c => setForm(f => ({ ...f, vanFacility: !!c }))} />
+                    <span className="text-sm">Van facility required</span>
+                  </label>
+                </FormSection>
+
                 <Button type="submit" className="w-full rounded-xl gradient-primary text-white border-0">Add Student</Button>
               </form>
             </SheetContent>
@@ -175,6 +285,15 @@ export default function Students() {
   );
 }
 
+function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground border-b pb-1">{title}</div>
+      {children}
+    </div>
+  );
+}
+
 function StudentProfile({ s, certificates, payments }: { s: any; certificates: any[]; payments: any[] }) {
   const att = makeAttendance(0);
   const present = att.filter(a => a.status === "Present").length;
@@ -185,14 +304,16 @@ function StudentProfile({ s, certificates, payments }: { s: any; certificates: a
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-3">
-          <Avatar name={s.name} size={48} />
+          {s.photo
+            ? <img src={s.photo} alt={s.name} className="w-12 h-12 rounded-full object-cover" />
+            : <Avatar name={s.name} size={48} />}
           <div>
             <div className="font-display text-xl">{s.name}</div>
             <div className="text-xs text-muted-foreground font-normal">{s.badgeId} • {s.class}</div>
           </div>
         </DialogTitle>
       </DialogHeader>
-      <Tabs defaultValue="profile" className="mt-2">
+      <Tabs defaultValue="profile" className="mt-2 max-h-[70vh] overflow-y-auto">
         <TabsList className="grid grid-cols-5 w-full rounded-xl">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="att">Attendance</TabsTrigger>
@@ -201,13 +322,38 @@ function StudentProfile({ s, certificates, payments }: { s: any; certificates: a
           <TabsTrigger value="chat">Chat</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-4">
-          <div className="grid sm:grid-cols-2 gap-4 text-sm">
-            <Field k="Parent" v={s.parent} />
-            <Field k="Phone" v={s.phone} />
-            <Field k="Email" v={s.email} />
-            <Field k="Date of birth" v={s.dob} />
-            <Field k="Enrolled" v={s.enrolled} />
-            <Field k="Status" v={s.status} />
+          <div className="space-y-4 text-sm">
+            <ProfileGroup title="Personal">
+              <Field k="Date of birth" v={s.dob} />
+              <Field k="Age" v={String(s.age || "—")} />
+              <Field k="Blood group" v={s.bloodGroup || "—"} />
+              <Field k="Gender" v={s.gender || "—"} />
+            </ProfileGroup>
+            <ProfileGroup title="Education & Occupation">
+              <Field k="School" v={s.school || "—"} />
+              <Field k="College" v={s.college || "—"} />
+              <Field k="Occupation" v={s.occupation || "—"} />
+            </ProfileGroup>
+            <ProfileGroup title="Parents">
+              <Field k="Father" v={s.fatherName || s.parent || "—"} />
+              <Field k="Father mobile" v={s.fatherMobile || s.phone || "—"} />
+              <Field k="Mother" v={s.motherName || "—"} />
+              <Field k="Mother mobile" v={s.motherMobile || "—"} />
+            </ProfileGroup>
+            <ProfileGroup title="Contact" cols={1}>
+              <Field k="Address" v={s.address || "—"} />
+              <Field k="Email" v={s.email} />
+            </ProfileGroup>
+            <ProfileGroup title="Course">
+              <Field k="Current course" v={s.currentCourse || s.class} />
+              <Field k="Batch days" v={s.batchDays || "—"} />
+              <Field k="Batch time" v={s.batchTime || "—"} />
+              <Field k="Duration" v={s.courseDurationMonths ? `${s.courseDurationMonths} months` : "—"} />
+              <Field k="Art teacher" v={s.artTeacher || "—"} />
+              <Field k="Van facility" v={s.vanFacility ? "Yes" : "No"} />
+              <Field k="Enrolled" v={s.enrolled} />
+              <Field k="Status" v={s.status} />
+            </ProfileGroup>
           </div>
         </TabsContent>
         <TabsContent value="att" className="mt-4">
@@ -252,6 +398,15 @@ function StudentProfile({ s, certificates, payments }: { s: any; certificates: a
         </TabsContent>
       </Tabs>
     </>
+  );
+}
+
+function ProfileGroup({ title, cols = 2, children }: { title: string; cols?: 1 | 2; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-2">{title}</div>
+      <div className={`grid gap-3 ${cols === 1 ? "" : "sm:grid-cols-2"}`}>{children}</div>
+    </div>
   );
 }
 
