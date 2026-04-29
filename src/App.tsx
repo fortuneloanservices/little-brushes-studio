@@ -9,6 +9,7 @@ import {
   LayoutDashboard, Building2, CreditCard, Settings as SettingsIcon, BarChart3,
   Users, GraduationCap, ClipboardCheck, Sparkles, Wallet, Boxes, Award, Bell,
   CalendarDays, MessageSquare, CalendarOff, BookOpen, ClipboardList, FileText, Palette, Star, TrendingUp,
+  MessageSquareHeart,
 } from "lucide-react";
 
 import Index from "./pages/Index";
@@ -30,10 +31,12 @@ import Inventory from "./pages/admin/Inventory";
 import Billing from "./pages/admin/Billing";
 import Certificates from "./pages/admin/Certificates";
 import Notifications from "./pages/admin/Notifications";
+import AdminFeedback from "./pages/admin/Feedback";
 
 import { SeniorDashboard, ClassApprovals, LeaveApprovals, MyClasses as SeniorMyClasses, ChatPage } from "./pages/senior-teacher/SeniorTeacherPages";
 import { TeacherDashboard, TeacherSlotRequests, TeacherAttendance, TeacherLeave, TeacherMyClasses, ChatPage as TeacherChat } from "./pages/teacher/TeacherPages";
 import { StudentDashboard, MyClassesStudent, RequestSlot, StudentAttendance, StudentFees, StudentCertificates, ChatPage as StudentChat } from "./pages/student/StudentPages";
+import { StudentFeedback } from "./pages/student/Feedback";
 import { TeacherDrawingTests, SeniorDrawingReviews, StudentMyScores } from "./pages/shared/DrawingTests";
 import { ProgressReports } from "./pages/shared/ProgressReports";
 import { Chat as SharedChat } from "./pages/shared/Chat";
@@ -60,6 +63,7 @@ const adminNav: NavItem[] = [
   { to: "/admin/billing", label: "Billing", icon: CreditCard },
   { to: "/admin/certificates", label: "Certificates", icon: Award },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },
+  { to: "/admin/feedback", label: "Parent Feedback", icon: MessageSquareHeart },
   { to: "/admin/chat", label: "Chat", icon: MessageSquare },
 ];
 const seniorNav: NavItem[] = [
@@ -88,6 +92,7 @@ const studentNav: NavItem[] = [
   { to: "/student/attendance", label: "Attendance", icon: ClipboardCheck },
   { to: "/student/fees", label: "Fees", icon: Wallet },
   { to: "/student/certificates", label: "Certificates", icon: Award },
+  { to: "/student/feedback", label: "Feedback", icon: MessageSquareHeart },
   { to: "/student/chat", label: "Chat", icon: MessageSquare },
 ];
 
@@ -122,6 +127,7 @@ const App = () => (
               <Route path="/admin/billing" element={<Billing />} />
               <Route path="/admin/certificates" element={<Certificates />} />
               <Route path="/admin/notifications" element={<Notifications />} />
+              <Route path="/admin/feedback" element={<AdminFeedback />} />
               <Route path="/admin/chat" element={<SharedChat />} />
             </Route>
 
@@ -153,6 +159,7 @@ const App = () => (
               <Route path="/student/attendance" element={<StudentAttendance />} />
               <Route path="/student/fees" element={<StudentFees />} />
               <Route path="/student/certificates" element={<StudentCertificates />} />
+              <Route path="/student/feedback" element={<StudentFeedback />} />
               <Route path="/student/chat" element={<StudentChat />} />
             </Route>
 
