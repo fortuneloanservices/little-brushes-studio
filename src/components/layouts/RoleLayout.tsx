@@ -1,5 +1,8 @@
-import { ReactNode, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+"use client";
+
+import { ReactNode, useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { Bell, ChevronDown, LogOut, Menu, Palette, X, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/shared/Logo";
 import { Avatar } from "@/components/shared/Avatar";
@@ -22,11 +25,17 @@ const ROLE_THEME: Record<Role, { hsl: string; gradient: string }> = {
   "student":        { hsl: "214 84% 50%", gradient: "from-info to-secondary/80" },
 };
 
-export function RoleLayout({ navItems, role }: { navItems: NavItem[]; role: Role }) {
+export function RoleLayout({ navItems, role, children }: { navItems: NavItem[]; role: Role; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
+  const pathname = usePathname();
   const theme = ROLE_THEME[role];
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   return (
     <div className="min-h-screen flex w-full bg-background">
@@ -51,43 +60,41 @@ export function RoleLayout({ navItems, role }: { navItems: NavItem[]; role: Role
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5 scrollbar-thin">
-          {navItems.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) => cn(
-                "group flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors relative",
-                isActive
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-              )}
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <span
-                      className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r"
-                      style={{ background: `hsl(${theme.hsl})` }}
-                    />
-                  )}
-                  <item.icon
-                    className="w-4 h-4 shrink-0"
-                    strokeWidth={2}
-                    style={isActive ? { color: `hsl(${theme.hsl})` } : undefined}
+          {navItems.map(item => {
+            const isActive = pathname === item.to || (item.end === false && pathname.startsWith(item.to));
+            return (
+              <Link
+                key={item.to}
+                href={item.to}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "group flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors relative",
+                  isActive
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                )}
+              >
+                {isActive && (
+                  <span
+                    className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r"
+                    style={{ background: `hsl(${theme.hsl})` }}
                   />
-                  <span>{item.label}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
+                )}
+                <item.icon
+                  className="w-4 h-4 shrink-0"
+                  strokeWidth={2}
+                  style={isActive ? { color: `hsl(${theme.hsl})` } : undefined}
+                />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
         <div className="p-3 border-t border-sidebar-border">
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 rounded-md text-muted-foreground hover:bg-destructive-soft hover:text-destructive font-medium"
-            onClick={() => { logout(); navigate("/login"); }}
+            onClick={handleLogout}
           >
             <LogOut className="w-4 h-4" /> Logout
           </Button>
@@ -146,15 +153,15 @@ export function RoleLayout({ navItems, role }: { navItems: NavItem[]; role: Role
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link to="/login">Switch Role</Link></DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { logout(); navigate("/login"); }}>Logout</DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href="/login">Switch Role</Link></DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-6 max-w-full">
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>
@@ -163,10 +170,28 @@ export function RoleLayout({ navItems, role }: { navItems: NavItem[]; role: Role
 
 export function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
   const { user } = useAuth();
-  const loc = useLocation();
-  if (!user) return <Navigate to="/login" state={{ from: loc.pathname }} />;
-  if (user.role !== role) return <Navigate to={`/${user.role}`} />;
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    if (user.role !== role) {
+      router.push(`/${user.role}`);
+    }
+  }, [user, role, router]);
+
+  if (!mounted || !user) {
+    return null;
+  }
+
+  if (user.role !== role) {
+    return null;
+  }
+
   return <>{children}</>;
 }
-
-import { Navigate } from "react-router-dom";

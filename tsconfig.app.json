@@ -23,6 +23,7 @@
     "noFallthroughCasesInSwitch": false,
 
     "paths": {
+      "@/pages/*": ["./src/legacy-pages/*"],
       "@/*": ["./src/*"]
     }
   },

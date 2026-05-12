@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useMemo } from "react";
 import { Star, Send, MessageSquareHeart } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -150,7 +152,7 @@ export function StudentFeedback() {
             </div>
             <div className="space-y-2">
               <Label>Is your child motivated and excited to attend the sessions?</Label>
-              <RadioGroup value={motivated} onValueChange={(v: any) => setMotivated(v)} className="flex gap-4 flex-wrap">
+              <RadioGroup value={motivated} onValueChange={(v: string) => setMotivated(v)} className="flex gap-4 flex-wrap">
                 {["Yes", "Sometimes", "No"].map(o => (
                   <label key={o} className="flex items-center gap-2 text-sm cursor-pointer"><RadioGroupItem value={o} />{o}</label>
                 ))}
@@ -164,7 +166,7 @@ export function StudentFeedback() {
             <h3 className="font-display font-bold text-lg">Communication & Support</h3>
             <div className="space-y-2">
               <Label>Do you feel well-informed about your child's progress?</Label>
-              <RadioGroup value={informed} onValueChange={(v: any) => setInformed(v)} className="flex gap-4 flex-wrap">
+              <RadioGroup value={informed} onValueChange={(v: string) => setInformed(v)} className="flex gap-4 flex-wrap">
                 {["Yes", "No", "Somewhat"].map(o => (
                   <label key={o} className="flex items-center gap-2 text-sm cursor-pointer"><RadioGroupItem value={o} />{o}</label>
                 ))}
@@ -189,7 +191,7 @@ export function StudentFeedback() {
             </div>
             <div className="space-y-2">
               <Label>Would you recommend our center to other parents?</Label>
-              <RadioGroup value={recommend} onValueChange={(v: any) => setRecommend(v)} className="flex gap-4 flex-wrap">
+              <RadioGroup value={recommend} onValueChange={(v: string) => setRecommend(v)} className="flex gap-4 flex-wrap">
                 {["Yes", "Maybe", "No"].map(o => (
                   <label key={o} className="flex items-center gap-2 text-sm cursor-pointer"><RadioGroupItem value={o} />{o}</label>
                 ))}

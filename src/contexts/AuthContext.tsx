@@ -1,3 +1,5 @@
+"use client";
+
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { Role, ROLE_LABELS } from "@/data/mockData";
 

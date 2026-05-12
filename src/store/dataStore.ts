@@ -1,3 +1,5 @@
+"use client";
+
 import { useSyncExternalStore } from "react";
 import {
   students as seedStudents,
@@ -11,20 +13,40 @@ import {
   certificates as seedCerts,
   notificationLog as seedNotifLog,
   institutions as seedInstitutions,
+  certificateTypes,
   CLASSES,
 } from "@/data/mockData";
 
-type Student = typeof seedStudents[number];
-type Teacher = typeof seedTeachers[number];
-type InventoryItem = typeof seedInventory[number];
-type Issue = typeof seedIssues[number];
-type Lead = typeof seedLeads[number];
-type SlotReq = typeof seedSlots[number];
-type Leave = typeof seedLeaves[number];
-type Payment = typeof seedPayments[number];
-type Certificate = typeof seedCerts[number];
-type NotifLog = typeof seedNotifLog[number];
-type Institution = typeof seedInstitutions[number];
+export type Student = typeof seedStudents[number] & {
+  photo?: string;
+  bloodGroup?: string;
+  gender?: string;
+  school?: string;
+  college?: string;
+  occupation?: string;
+  fatherName?: string;
+  fatherMobile?: string;
+  motherName?: string;
+  motherMobile?: string;
+  address?: string;
+  currentCourse?: string;
+  batchDays?: string;
+  batchTime?: string;
+  artTeacher?: string;
+  vanFacility?: boolean;
+  courseDurationMonths?: number;
+  courseEndDate?: string;
+};
+export type Teacher = typeof seedTeachers[number];
+export type InventoryItem = typeof seedInventory[number];
+export type Issue = typeof seedIssues[number];
+export type Lead = typeof seedLeads[number];
+export type SlotReq = typeof seedSlots[number];
+export type Leave = typeof seedLeaves[number];
+export type Payment = typeof seedPayments[number];
+export type Certificate = Omit<typeof seedCerts[number], "type"> & { type: typeof certificateTypes[number] };
+export type NotifLog = typeof seedNotifLog[number];
+export type Institution = typeof seedInstitutions[number];
 
 export type DrawingScore = { duration: number; neatness: number; art: number };
 export type DrawingTest = {
@@ -185,7 +207,7 @@ export const actions = {
     const id = `STU${String(1000 + state.students.length + 1).padStart(4, "0")}`;
     const badgeId = `LBA-${String(1000 + state.students.length + 1).padStart(4, "0")}`;
     const today = new Date().toISOString().slice(0, 10);
-    const s: any = {
+    const s: Student = {
       id, badgeId, name: input.name, age: input.age,
       class: (input.class as Student["class"]) || CLASSES[0],
       parent: input.parent || input.fatherName || input.motherName || "—",
@@ -229,7 +251,7 @@ export const actions = {
   },
 
   // Teachers
-  addTeacher(input: { name: string; email?: string; phone?: string; specialization: any; experience?: number }) {
+  addTeacher(input: { name: string; email?: string; phone?: string; specialization: Teacher["specialization"]; experience?: number }) {
     const id = `TCH${String(2000 + state.teachers.length + 1).padStart(4, "0")}`;
     const t: Teacher = {
       id, name: input.name,
@@ -318,9 +340,16 @@ export const actions = {
   },
 
   // Certificates
-  issueCertificate(input: { studentId: string; student: string; type: any; course: string }) {
+  issueCertificate(input: { studentId: string; student: string; type: Certificate["type"]; course: string }) {
     const id = `CRT${Date.now().toString(36)}`;
-    const c: Certificate = { id, studentId: input.studentId, student: input.student, type: input.type, course: input.course, issued: new Date().toISOString().slice(0, 10) };
+    const c: Certificate = {
+      id,
+      studentId: input.studentId,
+      student: input.student,
+      type: input.type,
+      course: input.course,
+      issued: new Date().toISOString().slice(0, 10),
+    };
     set(st => ({ certificates: [c, ...st.certificates] }));
     return c;
   },

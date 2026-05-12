@@ -1,3 +1,4 @@
+"use client";
 import { ReactNode, useMemo, useState } from "react";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -5,11 +6,13 @@ import { Button } from "@/components/ui/button";
 
 type Col<T> = { key: string; header: string; render?: (row: T) => ReactNode; className?: string };
 
-export function DataTable<T extends Record<string, any>>({
-  columns, rows, searchKeys, pageSize = 8, emptyMessage = "Nothing here yet",
-}: {
-  columns: Col<T>[]; rows: T[]; searchKeys?: (keyof T)[]; pageSize?: number; emptyMessage?: string;
-}) {
+export function DataTable<T extends Record<string, string | number | boolean>>(
+  {
+    columns, rows, searchKeys, pageSize = 8, emptyMessage = "Nothing here yet",
+  }: {
+    columns: Col<T>[]; rows: T[]; searchKeys?: (keyof T)[]; pageSize?: number; emptyMessage?: string;
+  },
+) {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
 

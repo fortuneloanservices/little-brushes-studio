@@ -1,3 +1,5 @@
+"use client";
+
 import { useMemo, useRef, useState } from "react";
 import { Plus, Eye, Search, AlarmClock, Upload, User } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -43,14 +45,15 @@ export default function Students() {
   const endingSoon = useMemo(() => {
     const now = Date.now();
     return students.filter(s => {
-      const end = (s as any).courseEndDate;
-      if (!end) return false;
+        // Safely handle courseEndDate field
+        const courseEnd = typeof s === 'object' && s !== null && 'courseEndDate' in s ? (s as {courseEndDate?: string}).courseEndDate : undefined;
+        if (!courseEnd) return false;
       const ms = new Date(end).getTime() - now;
       const days = ms / (1000 * 60 * 60 * 24);
       return days >= 0 && days <= 30;
     }).map(s => {
-      const end = (s as any).courseEndDate as string;
-      const days = Math.ceil((new Date(end).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      const courseEnd = typeof s === 'object' && s !== null && 'courseEndDate' in s ? (s as {courseEndDate?: string}).courseEndDate : undefined;
+      const end = courseEnd as string;
       return { ...s, daysLeft: days };
     });
   }, [students]);
@@ -263,7 +266,7 @@ export default function Students() {
           { key: "badgeId", header: "Badge ID", render: r => <span className="font-mono text-xs font-bold bg-muted px-2 py-1 rounded">{r.badgeId}</span> },
           { key: "class", header: "Class" },
           { key: "courseEndDate", header: "Course ends", render: r => {
-            const end = (r as any).courseEndDate;
+            const end = (r as typeof students[0] & {courseEndDate?: string}).courseEndDate;
             if (!end) return <span className="text-muted-foreground text-xs">—</span>;
             const days = Math.ceil((new Date(end).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
             const tone = days <= 30 ? "text-warning font-bold" : "text-muted-foreground";
@@ -294,7 +297,7 @@ function FormSection({ title, children }: { title: string; children: React.React
   );
 }
 
-function StudentProfile({ s, certificates, payments }: { s: any; certificates: any[]; payments: any[] }) {
+function StudentProfile({ s, certificates, payments }: { s: typeof students[0]; certificates: typeof certificates[0][]; payments: typeof payments[0][] }) {
   const att = makeAttendance(0);
   const present = att.filter(a => a.status === "Present").length;
   const studentCerts = certificates.filter(c => c.studentId === s.id);
