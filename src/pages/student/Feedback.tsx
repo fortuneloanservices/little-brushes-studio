@@ -39,10 +39,13 @@ function StarRow({ value, onChange }: { value: number; onChange: (n: number) => 
   );
 }
 
+export default StudentFeedback;
+
 export function StudentFeedback() {
   const me = useStore(s => s.students[0]);
   const teachers = useStore(s => s.teachers);
   const allFeedbacks = useStore(s => s.feedbacks);
+
   const myFeedbacks = useMemo(
     () => allFeedbacks.filter(f => f.studentId === me?.id),
     [allFeedbacks, me?.id],
@@ -62,6 +65,14 @@ export function StudentFeedback() {
   const [improve, setImprove] = useState("");
   const [recommend, setRecommend] = useState<"Yes" | "Maybe" | "No">("Yes");
   const [additional, setAdditional] = useState("");
+
+  if (!me) {
+    return (
+      <div className="p-10 text-center text-muted-foreground">
+        No student data is available yet. Please add a student or connect the real student dataset before using feedback.
+      </div>
+    );
+  }
 
   const setRating = (k: keyof FeedbackRatings, v: number) =>
     setRatings(r => ({ ...r, [k]: v }));
@@ -152,7 +163,7 @@ export function StudentFeedback() {
             </div>
             <div className="space-y-2">
               <Label>Is your child motivated and excited to attend the sessions?</Label>
-              <RadioGroup value={motivated} onValueChange={(v: string) => setMotivated(v)} className="flex gap-4 flex-wrap">
+              <RadioGroup value={motivated} onValueChange={(v) => setMotivated(v as "Yes" | "Sometimes" | "No")} className="flex gap-4 flex-wrap">
                 {["Yes", "Sometimes", "No"].map(o => (
                   <label key={o} className="flex items-center gap-2 text-sm cursor-pointer"><RadioGroupItem value={o} />{o}</label>
                 ))}
@@ -166,7 +177,7 @@ export function StudentFeedback() {
             <h3 className="font-display font-bold text-lg">Communication & Support</h3>
             <div className="space-y-2">
               <Label>Do you feel well-informed about your child's progress?</Label>
-              <RadioGroup value={informed} onValueChange={(v: string) => setInformed(v)} className="flex gap-4 flex-wrap">
+              <RadioGroup value={informed} onValueChange={(v) => setInformed(v as "Yes" | "No" | "Somewhat")} className="flex gap-4 flex-wrap">
                 {["Yes", "No", "Somewhat"].map(o => (
                   <label key={o} className="flex items-center gap-2 text-sm cursor-pointer"><RadioGroupItem value={o} />{o}</label>
                 ))}
@@ -191,7 +202,7 @@ export function StudentFeedback() {
             </div>
             <div className="space-y-2">
               <Label>Would you recommend our center to other parents?</Label>
-              <RadioGroup value={recommend} onValueChange={(v: string) => setRecommend(v)} className="flex gap-4 flex-wrap">
+              <RadioGroup value={recommend} onValueChange={(v) => setRecommend(v as "Yes" | "Maybe" | "No")} className="flex gap-4 flex-wrap">
                 {["Yes", "Maybe", "No"].map(o => (
                   <label key={o} className="flex items-center gap-2 text-sm cursor-pointer"><RadioGroupItem value={o} />{o}</label>
                 ))}

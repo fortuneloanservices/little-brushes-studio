@@ -52,7 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const v = useContext(Ctx);
-  if (!v) throw new Error("useAuth outside provider");
+  if (!v) {
+    return {
+      user: null,
+      login: () => {},
+      logout: () => {},
+    };
+  }
   return v;
 }
 

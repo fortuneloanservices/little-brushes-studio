@@ -291,6 +291,8 @@ function ScoreCard({ title, score, onChange, readOnly }: { title: string; score:
   );
 }
 
+export default TeacherDrawingTests;
+
 function ReadRow({ label, v }: { label: string; v: number }) {
   return (
     <div className="flex justify-between"><span className="text-muted-foreground">{label}</span><span className="font-mono font-bold">{v}/10</span></div>
