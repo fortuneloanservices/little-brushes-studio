@@ -174,6 +174,26 @@ export default function Students() {
     });
   }, [students, fetchStudentCredentials]);
 
+  const [allCredentials, setAllCredentials] = useState<Array<{ id: string; name: string; email: string; mobileNumber?: string; role: string; accountStatus: string; createdAt: string; studentId?: string }>>([]);
+  const [loadingAllCredentials, setLoadingAllCredentials] = useState(false);
+
+  useEffect(() => {
+    const fetchAllCredentials = async () => {
+      setLoadingAllCredentials(true);
+      try {
+        const response = await fetch('/api/student-credentials');
+        const result = await response.json();
+        setAllCredentials(result.credentials ?? []);
+      } catch (error) {
+        console.error('Error fetching all credentials:', error);
+      } finally {
+        setLoadingAllCredentials(false);
+      }
+    };
+
+    fetchAllCredentials();
+  }, []);
+
   // Reminders: students with course ending in <= 30 days
   const endingSoon = useMemo(() => {
     const now = Date.now();
@@ -245,10 +265,23 @@ export default function Students() {
     }
   };
 
-  const filtered = students
+  const credentialRows = allCredentials.map(c => ({
+    id: c.id,
+    name: c.name,
+    email: c.email,
+    badgeId: c.studentId ?? 'N/A',
+    class: 'Student',
+    feeStatus: 'N/A',
+  }));
+
+  const filteredStudents = students
     .filter(s => filterClass === "All" || s.class === filterClass)
     .filter(s => filterFee === "All" || s.feeStatus === filterFee)
     .filter(s => !q || s.name.toLowerCase().includes(q.toLowerCase()) || s.badgeId.toLowerCase().includes(q.toLowerCase()) || (s.parent ?? "").toLowerCase().includes(q.toLowerCase()));
+
+  const filteredCredentialRows = credentialRows.filter(r => !q || r.name.toLowerCase().includes(q.toLowerCase()) || r.badgeId.toLowerCase().includes(q.toLowerCase()));
+
+  const hasStudentRecords = students.length > 0;
 
   return (
     <div className="space-y-6">
@@ -439,63 +472,75 @@ export default function Students() {
         </Select>
       </div>
 
-      <DataTable
-        columns={[
-          { key: "name", header: "Student", render: r => (
-            <button onClick={() => setSelected(r)} className="flex items-center gap-3 text-left">
-              <Avatar name={r.name} />
-              <div>
-                <div className="font-bold">{r.name}</div>
-                <div className="text-xs text-muted-foreground">{r.email}</div>
-              </div>
-            </button>
-          )},
-          { key: "badgeId", header: "Badge ID", render: r => <span className="font-mono text-xs font-bold bg-muted px-2 py-1 rounded">{r.badgeId}</span> },
-          { key: "class", header: "Class" },
-          { key: "credentials", header: "Credentials", render: r => {
-            const creds = studentCredentials[r.id];
-            const loading = loadingCredentials[r.id];
+      {hasStudentRecords ? (
+        <DataTable
+          columns={[
+            { key: "name", header: "Student", render: r => (
+              <button onClick={() => setSelected(r)} className="flex items-center gap-3 text-left">
+                <Avatar name={r.name} />
+                <div>
+                  <div className="font-bold">{r.name}</div>
+                  <div className="text-xs text-muted-foreground">{r.email}</div>
+                </div>
+              </button>
+            )},
+            { key: "badgeId", header: "Badge ID", render: r => <span className="font-mono text-xs bg-muted px-2 py-1 rounded">{r.badgeId}</span> },
+            { key: "class", header: "Class" },
+            { key: "credentials", header: "Credentials", render: r => {
+              const creds = studentCredentials[r.id];
+              const loading = loadingCredentials[r.id];
 
-            if (loading) {
-              return <div className="text-xs text-muted-foreground">Loading...</div>;
-            }
+              if (loading) {
+                return <div className="text-xs text-muted-foreground">Loading...</div>;
+              }
 
-            if (!creds || !creds.hasCredentials) {
+              if (!creds || !creds.hasCredentials) {
+                return (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs rounded-lg border-orange-200 text-orange-700 hover:bg-orange-50"
+                    onClick={() => openCredentialsModal(r)}
+                  >
+                    <UserPlus className="w-3 h-3 mr-1" />
+                    Create
+                  </Button>
+                );
+              }
+
+              const status = creds.credentials.accountStatus;
+              const statusColor = status === 'Active' ? 'text-green-700 bg-green-50 border-green-200' :
+                                 status === 'Inactive' ? 'text-yellow-700 bg-yellow-50 border-yellow-200' :
+                                 'text-red-700 bg-red-50 border-red-200';
+
               return (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs rounded-lg border-orange-200 text-orange-700 hover:bg-orange-50"
-                  onClick={() => openCredentialsModal(r)}
-                >
-                  <UserPlus className="w-3 h-3 mr-1" />
-                  Create
-                </Button>
+                <div className="space-y-1">
+                  <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
+                    <Shield className="w-3 h-3 mr-1" />
+                    {status}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {creds.credentials.email}
+                  </div>
+                </div>
               );
-            }
-
-            const status = creds.credentials.accountStatus;
-            const statusColor = status === 'Active' ? 'text-green-700 bg-green-50 border-green-200' :
-                               status === 'Inactive' ? 'text-yellow-700 bg-yellow-50 border-yellow-200' :
-                               'text-red-700 bg-red-50 border-red-200';
-
-            return (
-              <div className="space-y-1">
-                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
-                  <Shield className="w-3 h-3 mr-1" />
-                  {status}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {creds.credentials.email}
-                </div>
-              </div>
-            );
-          }},
-          { key: "feeStatus", header: "Fee", render: r => <StatusPill status={r.feeStatus} /> },
-          { key: "x", header: "", render: r => <Button variant="ghost" size="sm" onClick={() => setSelected(r)}><Eye className="w-4 h-4" /></Button> },
-        ]}
-        rows={filtered}
-      />
+            }},
+            { key: "feeStatus", header: "Fee", render: r => <StatusPill status={r.feeStatus} /> },
+            { key: "x", header: "", render: r => <Button variant="ghost" size="sm" onClick={() => setSelected(r)}><Eye className="w-4 h-4" /></Button> },
+          ]}
+          rows={filteredStudents}
+        />
+      ) : (
+        <DataTable
+          columns={[
+            { key: "name", header: "Student", render: r => <div className="font-bold">{r.name}</div> },
+            { key: "badgeId", header: "Badge ID", render: r => <span className="font-mono text-xs bg-muted px-2 py-1 rounded">{r.badgeId}</span> },
+            { key: "class", header: "Class" },
+            { key: "feeStatus", header: "Fee", render: r => <span className="text-sm text-muted-foreground">{r.feeStatus}</span> },
+          ]}
+          rows={filteredCredentialRows}
+        />
+      )}
 
       <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
         <DialogContent className="max-w-3xl">

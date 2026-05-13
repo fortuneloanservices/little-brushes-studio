@@ -205,7 +205,7 @@ export const actions = {
     courseDurationMonths?: number;
   }) {
     const id = `STU${String(1000 + state.students.length + 1).padStart(4, "0")}`;
-    const badgeId = `LBA-${String(1000 + state.students.length + 1).padStart(4, "0")}`;
+    const badgeId = `Sparts-${String(1000 + state.students.length + 1).padStart(4, "0")}`;
     const today = new Date().toISOString().slice(0, 10);
     const s: Student = {
       id, badgeId, name: input.name, age: input.age,

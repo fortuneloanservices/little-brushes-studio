@@ -2,8 +2,10 @@ import mongoose from 'mongoose';
 
 export interface StudentCredentialsDocument extends mongoose.Document {
   studentId: string;
+  name: string;
   username: string;
   email: string;
+  password: string;
   passwordHash: string;
   role: 'Student' | 'Class Representative' | 'Premium Student';
   accountStatus: 'Active' | 'Inactive' | 'Suspended';
@@ -19,8 +21,10 @@ export interface StudentCredentialsDocument extends mongoose.Document {
 
 const StudentCredentialsSchema = new mongoose.Schema<StudentCredentialsDocument>({
   studentId: { type: String, required: true }, // Changed from ObjectId to String to match mock data IDs
+  name: { type: String, required: true },
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
+  password: { type: String },
   passwordHash: { type: String, required: true },
   role: { type: String, enum: ['Student', 'Class Representative', 'Premium Student'], default: 'Student' },
   accountStatus: { type: String, enum: ['Active', 'Inactive', 'Suspended'], default: 'Active' },
