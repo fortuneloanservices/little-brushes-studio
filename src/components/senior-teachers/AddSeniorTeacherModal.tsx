@@ -117,7 +117,22 @@ export function AddSeniorTeacherModal({ open, onOpenChange, onCreated }: AddSeni
       let profileImage = "";
       const file = values.profileImage && values.profileImage[0];
       if (file instanceof File) {
-        profileImage = await readFileAsDataURL(file);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', 'senior-teacher-profiles');
+
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json();
+          profileImage = uploadData.url;
+        } else {
+          // Fallback to data URL if upload fails
+          profileImage = await readFileAsDataURL(file);
+        }
       }
 
       const response = await fetch("/api/senior-teachers", {
