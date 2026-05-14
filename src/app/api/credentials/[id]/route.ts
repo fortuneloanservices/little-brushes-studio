@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import Credential from '@/lib/models/Credentials';
+import Student from '@/lib/models/Student';
+import Teacher from '@/lib/models/Teacher';
+import SeniorTeacher from '@/lib/models/SeniorTeacher';
 
 export const runtime = 'nodejs';
 const roles = ['student', 'teacher', 'senior_teacher'] as const;
@@ -134,6 +137,17 @@ export async function DELETE(
     const credential = await Credential.findByIdAndDelete(id);
     if (!credential) {
       return NextResponse.json({ error: 'Credential not found' }, { status: 404 });
+    }
+
+    const email = credential.email;
+    const role = credential.role;
+
+    if (role === 'student') {
+      await Student.deleteMany({ email });
+    } else if (role === 'teacher') {
+      await Teacher.deleteMany({ email });
+    } else if (role === 'senior_teacher') {
+      await SeniorTeacher.deleteMany({ email });
     }
 
     return NextResponse.json({ message: 'Credential deleted successfully' });

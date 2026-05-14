@@ -1,4 +1,4 @@
-import Students from "@/admin-pages/Students";
+import Students from "./Students";
 
 export default function StudentsPage() {
   return <Students />;
