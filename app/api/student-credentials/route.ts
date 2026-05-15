@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import StudentCredentials from '@/lib/models/StudentCredentials';
+import Student from '@/lib/models/Student';
 
 export const runtime = 'nodejs';
 
@@ -123,6 +124,25 @@ export async function POST(request: NextRequest) {
       studentIdNumber,
       createdBy,
     });
+
+    // Auto-create a Student record when student credentials are created.
+    const badgeId = studentIdNumber?.trim() || computedStudentId;
+    const existingStudent = await Student.findOne({ $or: [{ badgeId }, { email }] });
+
+    if (!existingStudent) {
+      try {
+        await Student.create({
+          fullName: name,
+          email,
+          badgeId,
+          className: 'Not Assigned',
+          phone: mobileNumber,
+          feeStatus: 'Pending',
+        });
+      } catch (error) {
+        console.error('Error creating student record for credentials:', error);
+      }
+    }
 
     return NextResponse.json({
       message: 'Credentials created successfully',

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import Credential from '@/lib/models/Credentials';
+import Teacher from '@/lib/models/Teacher';
+import SeniorTeacher from '@/lib/models/SeniorTeacher';
+import Student from '@/lib/models/Student';
 
 export const runtime = 'nodejs';
 const roles = ['student', 'teacher', 'senior_teacher'] as const;
@@ -106,6 +109,104 @@ export async function POST(request: NextRequest) {
       createdBy,
     });
 
+    let extraRecord: Record<string, unknown> | null = null;
+
+    if (role === 'student') {
+      try {
+        const badgeId = `STU-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+        const student = await Student.create({
+          fullName: name,
+          email,
+          badgeId,
+          className: 'Not Assigned',
+          phone: mobileNumber,
+          feeStatus: 'Pending',
+        });
+        extraRecord = {
+          student: {
+            id: student._id.toString(),
+            name: student.fullName,
+            badgeId: student.badgeId,
+            class: student.className,
+            feeStatus: student.feeStatus,
+          },
+        };
+      } catch (error) {
+        console.error('Error creating student record:', error);
+      }
+    }
+
+    if (role === 'teacher') {
+      try {
+        const teacher = await Teacher.create({
+          fullName: name,
+          email,
+          phone: mobileNumber,
+          specialization: 'Watercolor',
+          experience: 1,
+          status: accountStatus === 'Inactive' ? 'Inactive' : 'Active',
+          classes: [],
+          isSenior: false,
+        });
+        extraRecord = {
+          teacher: {
+            id: teacher._id.toString(),
+            fullName: teacher.fullName,
+            email: teacher.email,
+            phone: teacher.phone,
+            specialization: teacher.specialization,
+            experience: teacher.experience,
+            status: teacher.status,
+            classes: teacher.classes,
+            isSenior: teacher.isSenior,
+          },
+        };
+      } catch (error) {
+        console.error('Error creating teacher record:', error);
+      }
+    }
+
+    if (role === 'senior_teacher') {
+      try {
+        const seniorTeacher = await SeniorTeacher.create({
+          fullName: name,
+          email,
+          phone: mobileNumber,
+          specialization: 'General Art',
+          yearsOfExperience: 1,
+          role: 'Senior Teacher',
+          qualification: 'Art Education',
+          address: 'Not provided',
+          joiningDate: new Date(),
+          salary: 0,
+          bio: 'Created from credential',
+          profileImage: '',
+          status: accountStatus === 'Inactive' ? 'Inactive' : 'Active',
+          assignedClasses: 0,
+        });
+        extraRecord = {
+          seniorTeacher: {
+            id: seniorTeacher._id.toString(),
+            fullName: seniorTeacher.fullName,
+            email: seniorTeacher.email,
+            phone: seniorTeacher.phone,
+            specialization: seniorTeacher.specialization,
+            yearsOfExperience: seniorTeacher.yearsOfExperience,
+            role: seniorTeacher.role,
+            qualification: seniorTeacher.qualification,
+            address: seniorTeacher.address,
+            joiningDate: seniorTeacher.joiningDate,
+            salary: seniorTeacher.salary,
+            bio: seniorTeacher.bio,
+            status: seniorTeacher.status,
+            assignedClasses: seniorTeacher.assignedClasses,
+          },
+        };
+      } catch (error) {
+        console.error('Error creating senior teacher record:', error);
+      }
+    }
+
     return NextResponse.json(
       {
         message: 'Credential created successfully',
@@ -120,6 +221,7 @@ export async function POST(request: NextRequest) {
           accountStatus: credential.accountStatus,
           createdAt: credential.createdAt,
         },
+        ...extraRecord,
       },
       { status: 201 }
     );
