@@ -4,6 +4,18 @@ import SeniorTeacher from '@/lib/models/SeniorTeacher';
 
 export const runtime = 'nodejs';
 
+const generateBadgeId = () => {
+  return `SRT-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+};
+
+async function getUniqueBadgeId() {
+  let badgeId = generateBadgeId();
+  while (await SeniorTeacher.findOne({ badgeId })) {
+    badgeId = generateBadgeId();
+  }
+  return badgeId;
+}
+
 export async function GET() {
   try {
     await dbConnect();
@@ -11,9 +23,14 @@ export async function GET() {
     return NextResponse.json({
       teachers: teachers.map((t) => ({
         id: t._id.toString(),
+        badgeId: t.badgeId,
         fullName: t.fullName,
         email: t.email,
         phone: t.phone,
+        dob: t.dob,
+        age: t.age,
+        gender: t.gender,
+        bloodGroup: t.bloodGroup,
         specialization: t.specialization,
         yearsOfExperience: t.yearsOfExperience,
         role: t.role,
@@ -40,9 +57,14 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const body = await request.json();
     const {
+      badgeId,
       fullName,
       email,
       phone,
+      dob,
+      age,
+      gender,
+      bloodGroup,
       specialization,
       yearsOfExperience,
       role,
@@ -65,10 +87,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email already exists' }, { status: 409 });
     }
 
+    const finalBadgeId = badgeId?.trim() || await getUniqueBadgeId();
     const teacher = await SeniorTeacher.create({
       fullName,
+      badgeId: finalBadgeId,
       email,
       phone,
+      dob: dob ? new Date(dob) : undefined,
+      age,
+      gender,
+      bloodGroup,
       specialization,
       yearsOfExperience,
       role,
@@ -86,9 +114,14 @@ export async function POST(request: NextRequest) {
       message: 'Senior teacher created successfully',
       teacher: {
         id: teacher._id.toString(),
+        badgeId: teacher.badgeId,
         fullName: teacher.fullName,
         email: teacher.email,
         phone: teacher.phone,
+        dob: teacher.dob,
+        age: teacher.age,
+        gender: teacher.gender,
+        bloodGroup: teacher.bloodGroup,
         specialization: teacher.specialization,
         yearsOfExperience: teacher.yearsOfExperience,
         role: teacher.role,

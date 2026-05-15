@@ -181,6 +181,8 @@ export default function StudentsPage() {
   const [viewStudent, setViewStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [form, setForm] = useState<StudentForm>(defaultForm);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   const fetchStudents = useCallback(async () => {
     setLoading(true);
@@ -296,15 +298,21 @@ export default function StudentsPage() {
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
       const query = searchQuery.toLowerCase();
-      return (
-        !query ||
+      const matchesQuery = !query ||
         student.name.toLowerCase().includes(query) ||
         student.badgeId.toLowerCase().includes(query) ||
         (student.email || '').toLowerCase().includes(query) ||
-        student.class.toLowerCase().includes(query)
-      );
+        student.class.toLowerCase().includes(query);
+      
+      const matchesClass = filterClass === 'All' || student.class === filterClass;
+      const matchesFee = filterFee === 'All' || student.feeStatus === filterFee;
+      
+      return matchesQuery && matchesClass && matchesFee;
     });
-  }, [students, searchQuery]);
+  }, [students, searchQuery, filterClass, filterFee]);
+
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -324,12 +332,18 @@ export default function StudentsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Search by name, badge or email..."
             className="pl-9 rounded-xl"
           />
         </div>
-        <Select value={filterClass} onValueChange={setFilterClass}>
+        <Select value={filterClass} onValueChange={(value) => {
+          setFilterClass(value);
+          setCurrentPage(1);
+        }}>
           <SelectTrigger className="rounded-xl sm:w-48">
             <SelectValue placeholder="Class" />
           </SelectTrigger>
@@ -340,7 +354,10 @@ export default function StudentsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={filterFee} onValueChange={setFilterFee}>
+        <Select value={filterFee} onValueChange={(value) => {
+          setFilterFee(value);
+          setCurrentPage(1);
+        }}>
           <SelectTrigger className="rounded-xl sm:w-40">
             <SelectValue placeholder="Fee" />
           </SelectTrigger>
@@ -366,71 +383,94 @@ export default function StudentsPage() {
             }
           </div>
         ) : (
-          <DataTable
-            columns={[
-              {
-                key: 'name',
-                header: 'Student',
-                render: (row) => {
-                  const student = row as Student;
-                  return (
-                    <div className="flex items-center gap-3">
-                      <Avatar name={student.name} src={student.photo} />
-                      <div>
-                        <div className="font-bold">{student.name}</div>
-                        <div className="text-xs text-muted-foreground">{student.email || 'N/A'}</div>
+          <>
+            <DataTable
+              columns={[
+                {
+                  key: 'name',
+                  header: 'Student',
+                  render: (row) => {
+                    const student = row as Student;
+                    return (
+                      <div className="flex items-center gap-3">
+                        <Avatar name={student.name} src={student.photo} />
+                        <div>
+                          <div className="font-bold">{student.name}</div>
+                          <div className="text-xs text-muted-foreground">{student.email || 'N/A'}</div>
+                        </div>
                       </div>
-                    </div>
-                  );
+                    );
+                  },
                 },
-              },
-              {
-                key: 'badgeId',
-                header: 'Badge ID',
-                render: (row) => (
-                  <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
-                    {row.badgeId}
-                  </span>
-                ),
-              },
-              { key: 'class', header: 'Class' },
-              {
-                key: 'feeStatus',
-                header: 'Fee Status',
-                render: (row) => (
-                  <span
-                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                      row.feeStatus === 'Paid'
-                        ? 'bg-green-100 text-green-800'
-                        : row.feeStatus === 'Pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {row.feeStatus}
-                  </span>
-                ),
-              },
-              {
-                key: 'actions',
-                header: 'Actions',
-                render: (row) => {
-                  const student = row as Student;
-                  return (
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openEditStudent(student)}>
-                        <Pencil className="w-3 h-3 mr-1" /> Edit
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setViewStudent(student)}>
-                        <Eye className="w-3 h-3 mr-1" /> View
-                      </Button>
-                    </div>
-                  );
+                {
+                  key: 'badgeId',
+                  header: 'Badge ID',
+                  render: (row) => (
+                    <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                      {row.badgeId}
+                    </span>
+                  ),
                 },
-              },
-            ]}
-            rows={filteredStudents}
-          />
+                { key: 'class', header: 'Class' },
+                {
+                  key: 'feeStatus',
+                  header: 'Fee Status',
+                  render: (row) => (
+                    <span
+                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                        row.feeStatus === 'Paid'
+                          ? 'bg-green-100 text-green-800'
+                          : row.feeStatus === 'Pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {row.feeStatus}
+                    </span>
+                  ),
+                },
+                {
+                  key: 'actions',
+                  header: 'Actions',
+                  render: (row) => {
+                    const student = row as Student;
+                    return (
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="outline" onClick={() => openEditStudent(student)}>
+                          <Pencil className="w-3 h-3 mr-1" /> Edit
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setViewStudent(student)}>
+                          <Eye className="w-3 h-3 mr-1" /> View
+                        </Button>
+                      </div>
+                    );
+                  },
+                },
+              ]}
+              rows={paginatedStudents}
+            />
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between gap-4 p-4 border-t border-border">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -471,7 +511,7 @@ export default function StudentsPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="badgeId">Badge ID</Label>
-                  <Input id="badgeId" value={form.badgeId} onChange={(e) => setForm(current => ({ ...current, badgeId: e.target.value }))} required />
+                  <Input id="badgeId" value={form.badgeId} onChange={(e) => setForm(current => ({ ...current, badgeId: e.target.value }))} disabled={editingStudent !== null} required />
                 </div>
               </div>
 

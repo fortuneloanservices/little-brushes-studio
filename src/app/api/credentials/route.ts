@@ -9,6 +9,29 @@ import Student from '@/lib/models/Student';
 export const runtime = 'nodejs';
 const roles = ['student', 'teacher', 'senior_teacher'] as const;
 
+const generateBadgeId = (role: 'teacher' | 'senior_teacher' | 'student') => {
+  const prefix = role === 'teacher' ? 'TCH' : role === 'senior_teacher' ? 'SRT' : 'STU';
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+};
+
+async function getUniqueBadgeId(role: 'teacher' | 'senior_teacher' | 'student') {
+  let badgeId = generateBadgeId(role);
+  if (role === 'teacher') {
+    while (await Teacher.findOne({ badgeId })) {
+      badgeId = generateBadgeId(role);
+    }
+  } else if (role === 'senior_teacher') {
+    while (await SeniorTeacher.findOne({ badgeId })) {
+      badgeId = generateBadgeId(role);
+    }
+  } else {
+    while (await Student.findOne({ badgeId })) {
+      badgeId = generateBadgeId(role);
+    }
+  }
+  return badgeId;
+}
+
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
@@ -110,10 +133,12 @@ export async function POST(request: NextRequest) {
     });
 
     let extraRecord: Record<string, unknown> | null = null;
+    let createdBadgeId: string | null = null;
 
     if (role === 'student') {
       try {
-        const badgeId = `STU-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+        const badgeId = await getUniqueBadgeId('student');
+        createdBadgeId = badgeId;
         const student = await Student.create({
           fullName: name,
           email,
@@ -138,8 +163,11 @@ export async function POST(request: NextRequest) {
 
     if (role === 'teacher') {
       try {
+        const badgeId = await getUniqueBadgeId('teacher');
+        createdBadgeId = badgeId;
         const teacher = await Teacher.create({
           fullName: name,
+          badgeId,
           email,
           phone: mobileNumber,
           specialization: 'Watercolor',
@@ -151,6 +179,7 @@ export async function POST(request: NextRequest) {
         extraRecord = {
           teacher: {
             id: teacher._id.toString(),
+            badgeId: teacher.badgeId,
             fullName: teacher.fullName,
             email: teacher.email,
             phone: teacher.phone,
@@ -168,8 +197,11 @@ export async function POST(request: NextRequest) {
 
     if (role === 'senior_teacher') {
       try {
+        const badgeId = await getUniqueBadgeId('senior_teacher');
+        createdBadgeId = badgeId;
         const seniorTeacher = await SeniorTeacher.create({
           fullName: name,
+          badgeId,
           email,
           phone: mobileNumber,
           specialization: 'General Art',
@@ -187,6 +219,7 @@ export async function POST(request: NextRequest) {
         extraRecord = {
           seniorTeacher: {
             id: seniorTeacher._id.toString(),
+            badgeId: seniorTeacher.badgeId,
             fullName: seniorTeacher.fullName,
             email: seniorTeacher.email,
             phone: seniorTeacher.phone,
@@ -219,6 +252,7 @@ export async function POST(request: NextRequest) {
           mobileNumber: credential.mobileNumber,
           role: credential.role,
           accountStatus: credential.accountStatus,
+          badgeId: createdBadgeId,
           createdAt: credential.createdAt,
         },
         ...extraRecord,
