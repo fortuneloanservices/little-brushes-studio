@@ -162,6 +162,8 @@ export function Chat() {
   );
 }
 
+export default Chat;
+
 function NewChatDialog({
   open, onOpenChange, myRole, onCreate,
 }: { open: boolean; onOpenChange: (o: boolean) => void; myRole: ChatMessage["fromRole"]; onCreate: (id: string) => void }) {

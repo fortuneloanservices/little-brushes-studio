@@ -9,7 +9,7 @@ import { BirthdayBanner } from "@/components/shared/BirthdayBanner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { todaysClasses, makeAttendance } from "@/data/mockData";
+import { CLASSES, todaysClasses, makeAttendance } from "@/data/mockData";
 import { useStore, actions, type Student } from "@/store/dataStore";
 import { CertificatePreview } from "@/pages/admin/Certificates";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSunday } from "date-fns";
@@ -18,7 +18,28 @@ export { ChatPage } from "@/pages/senior-teacher/SeniorTeacherPages";
 
 function useMe() {
   const students = useStore(s => s.students);
-  return { ...students[0], isBirthdayToday: true };
+  const student = students[0];
+  if (!student) {
+    const now = new Date();
+    return {
+      id: "",
+      name: "Student",
+      badgeId: "",
+      class: CLASSES[0],
+      email: "",
+      parent: "",
+      phone: "",
+      age: 0,
+      totalFee: 0,
+      paidFee: 0,
+      feeStatus: "Pending" as const,
+      status: "Active" as const,
+      isBirthdayToday: false,
+      enrolled: format(now, "yyyy-MM-dd"),
+      dob: format(now, "yyyy-MM-dd"),
+    };
+  }
+  return { ...student, isBirthdayToday: true };
 }
 
 export function StudentDashboard() {
@@ -249,3 +270,5 @@ export function StudentCertificates() {
     </div>
   );
 }
+
+export default StudentDashboard;

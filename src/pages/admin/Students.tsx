@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { Plus, Eye, Search, AlarmClock, Upload, User } from "lucide-react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import { Plus, Eye, Search, AlarmClock, Upload, User, UserPlus, Shield, Copy } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusPill } from "@/components/shared/StatusPill";
@@ -18,6 +18,90 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CLASSES, makeAttendance } from "@/data/mockData";
 import { useStore, actions } from "@/store/dataStore";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const credentialsSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+      "Password must contain uppercase, lowercase, number, and special character"),
+  confirmPassword: z.string(),
+  role: z.enum(["Student", "Class Representative", "Premium Student"]),
+  portalAccess: z.boolean(),
+  forcePasswordReset: z.boolean(),
+  sendWelcomeEmail: z.boolean(),
+  recoveryEmail: z.string().email().optional().or(z.literal("")),
+  mobileNumber: z.string().optional(),
+  studentIdNumber: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type CredentialsForm = z.infer<typeof credentialsSchema>;
+
+type StudentType = {
+  id: string;
+  name: string;
+  email?: string;
+  photo?: string;
+  badgeId: string;
+  class: string;
+  feeStatus: string;
+  parent?: string;
+  dob?: string;
+  age?: number;
+  bloodGroup?: string;
+  gender?: string;
+  phone?: string;
+  school?: string;
+  college?: string;
+  occupation?: string;
+  fatherName?: string;
+  fatherMobile?: string;
+  motherName?: string;
+  motherMobile?: string;
+  address?: string;
+  currentCourse?: string;
+  batchDays?: string;
+  batchTime?: string;
+  courseDurationMonths?: number;
+  artTeacher?: string;
+  vanFacility?: boolean;
+  enrolled?: string;
+  status?: string;
+  totalFee?: number;
+  paidFee?: number;
+};
+
+type CertificateType = { id: string; studentId: string; type: string; course: string; issued: string; };
+
+type PaymentType = { id: string; student: string; date: string; amount: number; mode: string; };
+
+// Generate secure password
+const generateSecurePassword = () => {
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  const symbols = '!@#$%^&*';
+
+  let password = '';
+  password += lowercase[Math.floor(Math.random() * lowercase.length)];
+  password += uppercase[Math.floor(Math.random() * uppercase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += symbols[Math.floor(Math.random() * symbols.length)];
+
+  const allChars = lowercase + uppercase + numbers + symbols;
+  for (let i = 4; i < 12; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+};
 
 export default function Students() {
   const students = useStore(s => s.students);
@@ -41,27 +125,163 @@ export default function Students() {
   const [filterClass, setFilterClass] = useState<string>("All");
   const [filterFee, setFilterFee] = useState<string>("All");
 
+  // Credentials state
+  const [credentialsModal, setCredentialsModal] = useState(false);
+  const [selectedStudentForCredentials, setSelectedStudentForCredentials] = useState<typeof students[number] | null>(null);
+  const [studentCredentials, setStudentCredentials] = useState<Record<string, { hasCredentials: boolean; credentials: { accountStatus: string; email: string } | null }>>({});
+  const [loadingCredentials, setLoadingCredentials] = useState<Record<string, boolean>>({});
+
+  const credentialsForm = useForm<CredentialsForm>({
+    resolver: zodResolver(credentialsSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      role: "Student",
+      portalAccess: true,
+      forcePasswordReset: true,
+      sendWelcomeEmail: true,
+      recoveryEmail: "",
+      mobileNumber: "",
+      studentIdNumber: "",
+    },
+  });
+
+  // Fetch credentials for a student
+  const fetchStudentCredentials = useCallback(async (studentId: string) => {
+    if (studentCredentials[studentId] !== undefined) return; // Already fetched
+
+    setLoadingCredentials(prev => ({ ...prev, [studentId]: true }));
+    try {
+      const response = await fetch(`/api/student-credentials/by-student?studentId=${studentId}`);
+      const data = await response.json();
+      setStudentCredentials(prev => ({ ...prev, [studentId]: data }));
+    } catch (error) {
+      console.error('Error fetching credentials:', error);
+      setStudentCredentials(prev => ({ ...prev, [studentId]: { hasCredentials: false, credentials: null } }));
+    } finally {
+      setLoadingCredentials(prev => ({ ...prev, [studentId]: false }));
+    }
+  }, [studentCredentials]);
+
+  // Fetch credentials for all students on mount
+  useEffect(() => {
+    students.forEach(student => {
+      if (student.id) {
+        fetchStudentCredentials(student.id);
+      }
+    });
+  }, [students, fetchStudentCredentials]);
+
+  const [allCredentials, setAllCredentials] = useState<Array<{ id: string; name: string; email: string; mobileNumber?: string; role: string; accountStatus: string; createdAt: string; studentId?: string }>>([]);
+  const [loadingAllCredentials, setLoadingAllCredentials] = useState(false);
+
+  useEffect(() => {
+    const fetchAllCredentials = async () => {
+      setLoadingAllCredentials(true);
+      try {
+        const response = await fetch('/api/student-credentials');
+        const result = await response.json();
+        setAllCredentials(result.credentials ?? []);
+      } catch (error) {
+        console.error('Error fetching all credentials:', error);
+      } finally {
+        setLoadingAllCredentials(false);
+      }
+    };
+
+    fetchAllCredentials();
+  }, []);
+
   // Reminders: students with course ending in <= 30 days
   const endingSoon = useMemo(() => {
     const now = Date.now();
-    return students.filter(s => {
-        // Safely handle courseEndDate field
+    return students
+      .map(s => {
         const courseEnd = typeof s === 'object' && s !== null && 'courseEndDate' in s ? (s as {courseEndDate?: string}).courseEndDate : undefined;
-        if (!courseEnd) return false;
-      const ms = new Date(end).getTime() - now;
-      const days = ms / (1000 * 60 * 60 * 24);
-      return days >= 0 && days <= 30;
-    }).map(s => {
-      const courseEnd = typeof s === 'object' && s !== null && 'courseEndDate' in s ? (s as {courseEndDate?: string}).courseEndDate : undefined;
-      const end = courseEnd as string;
-      return { ...s, daysLeft: days };
-    });
+        if (!courseEnd) return null;
+        const end = courseEnd as string;
+        const ms = new Date(end).getTime() - now;
+        const days = ms / (1000 * 60 * 60 * 24);
+        if (days >= 0 && days <= 30) {
+          return { ...s, daysLeft: Math.ceil(days) };
+        }
+        return null;
+      })
+      .filter(Boolean) as Array<typeof students[number] & { daysLeft: number }>;
   }, [students]);
 
-  const filtered = students
+  // Open credentials modal
+  const openCredentialsModal = (student: typeof students[number]) => {
+    setSelectedStudentForCredentials(student);
+    credentialsForm.reset({
+      username: student.name.toLowerCase().replace(/\s+/g, '') + Math.random().toString(36).substring(2, 5),
+      email: student.email || "",
+      password: "",
+      confirmPassword: "",
+      role: "Student",
+      portalAccess: true,
+      forcePasswordReset: true,
+      sendWelcomeEmail: true,
+      recoveryEmail: "",
+      mobileNumber: student.phone || "",
+      studentIdNumber: student.badgeId,
+    });
+    setCredentialsModal(true);
+  };
+
+  // Submit credentials
+  const onSubmitCredentials = async (data: CredentialsForm) => {
+    if (!selectedStudentForCredentials) return;
+
+    try {
+      const response = await fetch('/api/student-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: selectedStudentForCredentials.id,
+          ...data,
+          createdBy: 'Admin',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success('Credentials created successfully!');
+        setStudentCredentials(prev => ({
+          ...prev,
+          [selectedStudentForCredentials.id]: { hasCredentials: true, credentials: result.credentials }
+        }));
+        setCredentialsModal(false);
+        credentialsForm.reset();
+      } else {
+        toast.error(result.error || 'Failed to create credentials');
+      }
+    } catch (error) {
+      console.error('Error creating credentials:', error);
+      toast.error('Failed to create credentials');
+    }
+  };
+
+  const credentialRows = allCredentials.map(c => ({
+    id: c.id,
+    name: c.name,
+    email: c.email,
+    badgeId: c.studentId ?? 'N/A',
+    class: 'Student',
+    feeStatus: 'N/A',
+  }));
+
+  const filteredStudents = students
     .filter(s => filterClass === "All" || s.class === filterClass)
     .filter(s => filterFee === "All" || s.feeStatus === filterFee)
     .filter(s => !q || s.name.toLowerCase().includes(q.toLowerCase()) || s.badgeId.toLowerCase().includes(q.toLowerCase()) || (s.parent ?? "").toLowerCase().includes(q.toLowerCase()));
+
+  const filteredCredentialRows = credentialRows.filter(r => !q || r.name.toLowerCase().includes(q.toLowerCase()) || r.badgeId.toLowerCase().includes(q.toLowerCase()));
+
+  const hasStudentRecords = students.length > 0;
 
   return (
     <div className="space-y-6">
@@ -252,36 +472,339 @@ export default function Students() {
         </Select>
       </div>
 
-      <DataTable
-        columns={[
-          { key: "name", header: "Student", render: r => (
-            <button onClick={() => setSelected(r)} className="flex items-center gap-3 text-left">
-              <Avatar name={r.name} />
-              <div>
-                <div className="font-bold">{r.name}</div>
-                <div className="text-xs text-muted-foreground">{r.email}</div>
-              </div>
-            </button>
-          )},
-          { key: "badgeId", header: "Badge ID", render: r => <span className="font-mono text-xs font-bold bg-muted px-2 py-1 rounded">{r.badgeId}</span> },
-          { key: "class", header: "Class" },
-          { key: "courseEndDate", header: "Course ends", render: r => {
-            const end = (r as typeof students[0] & {courseEndDate?: string}).courseEndDate;
-            if (!end) return <span className="text-muted-foreground text-xs">—</span>;
-            const days = Math.ceil((new Date(end).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-            const tone = days <= 30 ? "text-warning font-bold" : "text-muted-foreground";
-            return <div className="text-xs"><div>{end}</div><div className={tone}>{days >= 0 ? `${days}d left` : "Ended"}</div></div>;
-          }},
-          { key: "parent", header: "Parent" },
-          { key: "feeStatus", header: "Fee", render: r => <StatusPill status={r.feeStatus} /> },
-          { key: "x", header: "", render: r => <Button variant="ghost" size="sm" onClick={() => setSelected(r)}><Eye className="w-4 h-4" /></Button> },
-        ]}
-        rows={filtered}
-      />
+      {hasStudentRecords ? (
+        <DataTable
+          columns={[
+            { key: "name", header: "Student", render: r => (
+              <button onClick={() => setSelected(r)} className="flex items-center gap-3 text-left">
+                <Avatar name={r.name} />
+                <div>
+                  <div className="font-bold">{r.name}</div>
+                  <div className="text-xs text-muted-foreground">{r.email}</div>
+                </div>
+              </button>
+            )},
+            { key: "badgeId", header: "Badge ID", render: r => <span className="font-mono text-xs bg-muted px-2 py-1 rounded">{r.badgeId}</span> },
+            { key: "class", header: "Class" },
+            { key: "credentials", header: "Credentials", render: r => {
+              const creds = studentCredentials[r.id];
+              const loading = loadingCredentials[r.id];
+
+              if (loading) {
+                return <div className="text-xs text-muted-foreground">Loading...</div>;
+              }
+
+              if (!creds || !creds.hasCredentials) {
+                return (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs rounded-lg border-orange-200 text-orange-700 hover:bg-orange-50"
+                    onClick={() => openCredentialsModal(r)}
+                  >
+                    <UserPlus className="w-3 h-3 mr-1" />
+                    Create
+                  </Button>
+                );
+              }
+
+              const status = creds.credentials.accountStatus;
+              const statusColor = status === 'Active' ? 'text-green-700 bg-green-50 border-green-200' :
+                                 status === 'Inactive' ? 'text-yellow-700 bg-yellow-50 border-yellow-200' :
+                                 'text-red-700 bg-red-50 border-red-200';
+
+              return (
+                <div className="space-y-1">
+                  <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
+                    <Shield className="w-3 h-3 mr-1" />
+                    {status}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {creds.credentials.email}
+                  </div>
+                </div>
+              );
+            }},
+            { key: "feeStatus", header: "Fee", render: r => <StatusPill status={r.feeStatus} /> },
+            { key: "x", header: "", render: r => <Button variant="ghost" size="sm" onClick={() => setSelected(r)}><Eye className="w-4 h-4" /></Button> },
+          ]}
+          rows={filteredStudents}
+        />
+      ) : (
+        <DataTable
+          columns={[
+            { key: "name", header: "Student", render: r => <div className="font-bold">{r.name}</div> },
+            { key: "badgeId", header: "Badge ID", render: r => <span className="font-mono text-xs bg-muted px-2 py-1 rounded">{r.badgeId}</span> },
+            { key: "class", header: "Class" },
+            { key: "feeStatus", header: "Fee", render: r => <span className="text-sm text-muted-foreground">{r.feeStatus}</span> },
+          ]}
+          rows={filteredCredentialRows}
+        />
+      )}
 
       <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
         <DialogContent className="max-w-3xl">
           {selected && <StudentProfile s={selected} certificates={certificates} payments={payments} />}
+        </DialogContent>
+      </Dialog>
+
+      {/* Credentials Modal */}
+      <Dialog open={credentialsModal} onOpenChange={setCredentialsModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-orange-500" />
+              Create Student Credentials
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedStudentForCredentials && (
+            <div className="space-y-6">
+              {/* Student Information */}
+              <div className="bg-muted/30 rounded-lg p-4 border">
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Student Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Name:</span>
+                    <div className="font-medium">{selectedStudentForCredentials.name}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Badge ID:</span>
+                    <div className="font-medium font-mono">{selectedStudentForCredentials.badgeId}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Class:</span>
+                    <div className="font-medium">{selectedStudentForCredentials.class}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Parent:</span>
+                    <div className="font-medium">{selectedStudentForCredentials.parent}</div>
+                  </div>
+                  {selectedStudentForCredentials.email && (
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Email:</span>
+                      <div className="font-medium">{selectedStudentForCredentials.email}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <form onSubmit={credentialsForm.handleSubmit(onSubmitCredentials)} className="space-y-6">
+                {/* Login Information */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm border-b pb-1">Login Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="username">Username *</Label>
+                      <div className="relative">
+                        <Input
+                          id="username"
+                          {...credentialsForm.register("username")}
+                          className="pr-8"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1 h-6 w-6 p-0"
+                          onClick={() => {
+                            const username = credentialsForm.getValues("username");
+                            navigator.clipboard.writeText(username);
+                            toast.success("Username copied!");
+                          }}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      {credentialsForm.formState.errors.username && (
+                        <p className="text-xs text-red-500">{credentialsForm.formState.errors.username.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        {...credentialsForm.register("email")}
+                      />
+                      {credentialsForm.formState.errors.email && (
+                        <p className="text-xs text-red-500">{credentialsForm.formState.errors.email.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password *</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="password"
+                          type="password"
+                          {...credentialsForm.register("password")}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const password = generateSecurePassword();
+                            credentialsForm.setValue("password", password);
+                            credentialsForm.setValue("confirmPassword", password);
+                          }}
+                        >
+                          Generate
+                        </Button>
+                      </div>
+                      {(() => {
+                        const password = credentialsForm.watch("password");
+                        if (!password) return null;
+                        const hasLower = /[a-z]/.test(password);
+                        const hasUpper = /[A-Z]/.test(password);
+                        const hasNumber = /\d/.test(password);
+                        const hasSpecial = /[@$!%*?&]/.test(password);
+                        const hasLength = password.length >= 8;
+                        const strength = [hasLower, hasUpper, hasNumber, hasSpecial, hasLength].filter(Boolean).length;
+                        const strengthText = strength <= 2 ? "Weak" : strength <= 4 ? "Medium" : "Strong";
+                        const strengthColor = strength <= 2 ? "text-red-500" : strength <= 4 ? "text-yellow-500" : "text-green-500";
+                        return (
+                          <div className="text-xs">
+                            <div className={`font-medium ${strengthColor}`}>Strength: {strengthText}</div>
+                            <div className="flex gap-1 mt-1">
+                              {[1,2,3,4,5].map(i => (
+                                <div key={i} className={`h-1 w-4 rounded ${i <= strength ? strengthColor.replace('text-', 'bg-') : 'bg-gray-200'}`} />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      {credentialsForm.formState.errors.password && (
+                        <p className="text-xs text-red-500">{credentialsForm.formState.errors.password.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        {...credentialsForm.register("confirmPassword")}
+                      />
+                      {credentialsForm.formState.errors.confirmPassword && (
+                        <p className="text-xs text-red-500">{credentialsForm.formState.errors.confirmPassword.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <strong>Password Requirements:</strong> Minimum 8 characters with at least one uppercase letter, one lowercase letter, one number, and one special character.
+                  </div>
+                </div>
+
+                {/* Account Settings */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm border-b pb-1">Account Settings</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Role</Label>
+                      <Select
+                        value={credentialsForm.watch("role")}
+                        onValueChange={(value) => credentialsForm.setValue("role", value as CredentialsForm['role'])}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Student">Student</SelectItem>
+                          <SelectItem value="Class Representative">Class Representative</SelectItem>
+                          <SelectItem value="Premium Student">Premium Student</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="studentIdNumber">Student ID / Admission Number</Label>
+                      <Input
+                        id="studentIdNumber"
+                        {...credentialsForm.register("studentIdNumber")}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="portalAccess"
+                        checked={credentialsForm.watch("portalAccess")}
+                        onCheckedChange={(checked) => credentialsForm.setValue("portalAccess", !!checked)}
+                      />
+                      <Label htmlFor="portalAccess" className="text-sm">Allow Student Portal Access</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="forcePasswordReset"
+                        checked={credentialsForm.watch("forcePasswordReset")}
+                        onCheckedChange={(checked) => credentialsForm.setValue("forcePasswordReset", !!checked)}
+                      />
+                      <Label htmlFor="forcePasswordReset" className="text-sm">Force Password Change on First Login</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="sendWelcomeEmail"
+                        checked={credentialsForm.watch("sendWelcomeEmail")}
+                        onCheckedChange={(checked) => credentialsForm.setValue("sendWelcomeEmail", !!checked)}
+                      />
+                      <Label htmlFor="sendWelcomeEmail" className="text-sm">Send Welcome Email</Label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Optional Information */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm border-b pb-1">Optional Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="mobileNumber">Mobile Number</Label>
+                      <Input
+                        id="mobileNumber"
+                        {...credentialsForm.register("mobileNumber")}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recoveryEmail">Recovery Email</Label>
+                      <Input
+                        id="recoveryEmail"
+                        type="email"
+                        {...credentialsForm.register("recoveryEmail")}
+                      />
+                      {credentialsForm.formState.errors.recoveryEmail && (
+                        <p className="text-xs text-red-500">{credentialsForm.formState.errors.recoveryEmail.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCredentialsModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                    disabled={credentialsForm.formState.isSubmitting}
+                  >
+                    {credentialsForm.formState.isSubmitting ? "Creating..." : "Create Credentials"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
@@ -297,7 +820,7 @@ function FormSection({ title, children }: { title: string; children: React.React
   );
 }
 
-function StudentProfile({ s, certificates, payments }: { s: typeof students[0]; certificates: typeof certificates[0][]; payments: typeof payments[0][] }) {
+function StudentProfile({ s, certificates, payments }: { s: StudentType; certificates: CertificateType[]; payments: PaymentType[] }) {
   const att = makeAttendance(0);
   const present = att.filter(a => a.status === "Present").length;
   const studentCerts = certificates.filter(c => c.studentId === s.id);

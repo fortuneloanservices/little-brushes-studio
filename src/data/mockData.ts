@@ -28,36 +28,26 @@ export const ROLE_LABELS: Record<Role, string> = {
 };
 
 // ---------- Students ----------
-const studentNames = [
-  "Aarav Sharma","Diya Patel","Vihaan Reddy","Anaya Iyer","Kabir Mehta",
-  "Myra Singh","Aryan Kapoor","Saanvi Joshi","Reyansh Nair","Ira Bansal",
-  "Vivaan Khanna","Aadhya Rao","Arjun Pillai","Kiara Desai","Ishaan Gupta",
-];
+export type Student = {
+  id: string;
+  badgeId: string;
+  name: string;
+  age: number;
+  class: typeof CLASSES[number];
+  parent: string;
+  phone: string;
+  email: string;
+  dob: string;
+  enrolled: string;
+  feeStatus: "Paid" | "Pending" | "Overdue";
+  totalFee: number;
+  paidFee: number;
+  status: "Active";
+  isBirthdayToday: boolean;
+  courseEndDate?: string;
+};
 
-export const students = studentNames.map((name, i) => {
-  // Make 2nd and 5th students have today's birthday
-  const isBirthdayToday = i === 1 || i === 4;
-  const dob = isBirthdayToday
-    ? `2015-${todayMonthDay}`
-    : format(subDays(today, 365 * (5 + (i % 8)) + i * 13), "yyyy-MM-dd");
-  return {
-    id: `STU${String(1001 + i).padStart(4, "0")}`,
-    badgeId: `LBA-${String(1001 + i).padStart(4, "0")}`,
-    name,
-    age: 5 + (i % 10),
-    class: CLASSES[i % CLASSES.length],
-    parent: ["Rohit","Priya","Suresh","Meera","Vikram"][i % 5] + " " + name.split(" ")[1],
-    phone: `+91 9${String(800000000 + i * 12345).slice(0, 9)}`,
-    email: name.toLowerCase().replace(" ", ".") + "@kid.in",
-    dob,
-    enrolled: format(subDays(today, 30 + i * 25), "yyyy-MM-dd"),
-    feeStatus: (i % 4 === 0 ? "Pending" : i % 7 === 0 ? "Overdue" : "Paid") as "Paid" | "Pending" | "Overdue",
-    totalFee: 18000,
-    paidFee: i % 4 === 0 ? 9000 : i % 7 === 0 ? 0 : 18000,
-    status: "Active" as const,
-    isBirthdayToday,
-  };
-});
+export const students: Student[] = [];
 
 // ---------- Teachers ----------
 const teacherNames = [
@@ -90,13 +80,8 @@ export const inventoryItems = [
   { id: "INV010", name: "Drawing Pencils HB",category: "Equipment",  stock: 60, reorder: 25 },
 ].map(it => ({ ...it, status: it.stock <= it.reorder ? "Low Stock" : "In Stock" }));
 
-export const recentIssues = [
-  { date: format(today, "yyyy-MM-dd"),         student: students[0].name, item: "Apron - Medium",    qty: 1 },
-  { date: format(subDays(today,1),"yyyy-MM-dd"),student: students[3].name, item: "Watercolor Set 12", qty: 1 },
-  { date: format(subDays(today,2),"yyyy-MM-dd"),student: students[5].name, item: "Sketch Book A4",    qty: 2 },
-  { date: format(subDays(today,3),"yyyy-MM-dd"),student: students[7].name, item: "Clay Kit 1kg",      qty: 1 },
-  { date: format(subDays(today,4),"yyyy-MM-dd"),student: students[2].name, item: "Paint Brushes Set", qty: 1 },
-];
+export type RecentIssue = { date: string; student: string; item: string; qty: number };
+export const recentIssues: RecentIssue[] = [];
 
 // ---------- CRM Leads ----------
 export const leadStages = ["New Enquiry", "Follow-up", "Visit Scheduled", "Enrolled"] as const;
@@ -109,14 +94,8 @@ export const leads = [
 ];
 
 // ---------- Slot requests ----------
-export const slotRequests = [
-  { id: "SR001", studentId: students[0].id, student: students[0].name, badge: students[0].badgeId, class: "Watercolor Basics",  time: "4:00 PM", date: format(today,"yyyy-MM-dd"),       status: "Pending" as const },
-  { id: "SR002", studentId: students[2].id, student: students[2].name, badge: students[2].badgeId, class: "Clay Sculpting",     time: "5:00 PM", date: format(today,"yyyy-MM-dd"),       status: "Pending" as const },
-  { id: "SR003", studentId: students[4].id, student: students[4].name, badge: students[4].badgeId, class: "Sketching",          time: "5:30 PM", date: format(today,"yyyy-MM-dd"),       status: "Pending" as const },
-  { id: "SR004", studentId: students[1].id, student: students[1].name, badge: students[1].badgeId, class: "Acrylic Painting",   time: "4:30 PM", date: format(addDays(today,1),"yyyy-MM-dd"), status: "Approved" as const },
-  { id: "SR005", studentId: students[6].id, student: students[6].name, badge: students[6].badgeId, class: "Pottery",            time: "6:00 PM", date: format(addDays(today,1),"yyyy-MM-dd"), status: "Approved" as const },
-  { id: "SR006", studentId: students[8].id, student: students[8].name, badge: students[8].badgeId, class: "Watercolor Basics",  time: "4:00 PM", date: format(subDays(today,1),"yyyy-MM-dd"), status: "Denied"  as const },
-];
+export type SlotRequest = { id: string; studentId: string; student: string; badge: string; class: string; time: string; date: string; status: "Pending" | "Approved" | "Denied" };
+export const slotRequests: SlotRequest[] = [];
 
 // ---------- Leaves ----------
 export type LeaveStatus = "Pending" | "Approved" | "Rejected";
@@ -140,13 +119,8 @@ export const salaries = teachers.map((t, i) => {
 });
 
 // ---------- Payments ----------
-export const payments = [
-  { id: "PAY001", date: format(today,"yyyy-MM-dd"),          student: students[0].name, amount: 9000,  mode: "Online" as const, status: "Success" as const },
-  { id: "PAY002", date: format(subDays(today,1),"yyyy-MM-dd"),student: students[1].name, amount: 18000, mode: "Cash"   as const, status: "Success" as const },
-  { id: "PAY003", date: format(subDays(today,2),"yyyy-MM-dd"),student: students[3].name, amount: 6000,  mode: "Online" as const, status: "Success" as const },
-  { id: "PAY004", date: format(subDays(today,3),"yyyy-MM-dd"),student: students[5].name, amount: 18000, mode: "Online" as const, status: "Success" as const },
-  { id: "PAY005", date: format(subDays(today,5),"yyyy-MM-dd"),student: students[7].name, amount: 12000, mode: "Cash"   as const, status: "Success" as const },
-];
+export type Payment = { id: string; date: string; student: string; amount: number; mode: "Online" | "Cash"; status: "Success" };
+export const payments: Payment[] = [];
 
 // ---------- Attendance (last 30 days for first student) ----------
 export function makeAttendance(studentIndex = 0) {
@@ -163,11 +137,8 @@ export function makeAttendance(studentIndex = 0) {
 
 // ---------- Certificates ----------
 export const certificateTypes = ["Bonafide", "Completion", "Merit", "Participation"] as const;
-export const certificates = students.flatMap((s, i) => [
-  { id: `CRT${i}1`, studentId: s.id, student: s.name, type: "Participation" as const, course: "Watercolor Basics",  issued: format(subDays(today, 60+i*3), "yyyy-MM-dd") },
-  { id: `CRT${i}2`, studentId: s.id, student: s.name, type: "Merit" as const,         course: "Sketching",          issued: format(subDays(today, 30+i*3), "yyyy-MM-dd") },
-  { id: `CRT${i}3`, studentId: s.id, student: s.name, type: "Bonafide" as const,      course: "General",            issued: format(subDays(today, 10+i),    "yyyy-MM-dd") },
-]);
+export type Certificate = { id: string; studentId: string; student: string; type: typeof certificateTypes[number]; course: string; issued: string };
+export const certificates: Certificate[] = [];
 
 // ---------- Institutions (super admin) ----------
 export const institutions = [

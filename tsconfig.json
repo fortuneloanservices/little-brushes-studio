@@ -25,6 +25,9 @@
       "@/pages/*": [
         "./src/legacy-pages/*"
       ],
+      "@/admin-pages/*": [
+        "./src/pages/admin/*"
+      ],
       "@/*": [
         "./src/*"
       ]
