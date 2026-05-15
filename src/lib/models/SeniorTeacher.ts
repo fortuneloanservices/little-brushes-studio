@@ -2,8 +2,13 @@ import mongoose from 'mongoose';
 
 export interface SeniorTeacherDocument extends mongoose.Document {
   fullName: string;
+  badgeId?: string;
   email: string;
   phone: string;
+  dob?: Date;
+  age?: number;
+  gender?: string;
+  bloodGroup?: string;
   specialization: string;
   yearsOfExperience: number;
   role: string;
@@ -21,13 +26,18 @@ export interface SeniorTeacherDocument extends mongoose.Document {
 
 const SeniorTeacherSchema = new mongoose.Schema<SeniorTeacherDocument>({
   fullName: { type: String, required: true },
+  badgeId: { type: String },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
+  dob: { type: Date },
+  age: { type: Number },
+  gender: { type: String, enum: ['Male', 'Female', 'Other'] },
+  bloodGroup: { type: String },
   specialization: { type: String, required: true },
   yearsOfExperience: { type: Number, required: true, default: 0 },
   role: {
     type: String,
-    enum: ['Senior Faculty', 'Head Instructor', 'Master Trainer', 'Workshop Mentor', 'Senior Teacher'],
+    enum: ['Senior Faculty', 'Head Instructor', 'Master Trainer', 'Workshop Mentor', 'Senior Teacher', 'Lead Instructor', 'Department Head'],
     required: true,
   },
   qualification: { type: String, required: true },

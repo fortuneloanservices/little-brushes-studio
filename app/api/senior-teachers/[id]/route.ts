@@ -4,20 +4,25 @@ import SeniorTeacher from '@/lib/models/SeniorTeacher';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: Request, context: unknown) {
-  const { params } = context as { params: { id: string } };
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     await dbConnect();
-    const teacher = await SeniorTeacher.findById(params.id);
+    const teacher = await SeniorTeacher.findById(id);
     if (!teacher) {
       return NextResponse.json({ error: 'Senior teacher not found' }, { status: 404 });
     }
     return NextResponse.json({
       teacher: {
         id: teacher._id.toString(),
+        badgeId: teacher.badgeId,
         fullName: teacher.fullName,
         email: teacher.email,
         phone: teacher.phone,
+        dob: teacher.dob,
+        age: teacher.age,
+        gender: teacher.gender,
+        bloodGroup: teacher.bloodGroup,
         specialization: teacher.specialization,
         yearsOfExperience: teacher.yearsOfExperience,
         role: teacher.role,
@@ -39,8 +44,8 @@ export async function GET(request: Request, context: unknown) {
   }
 }
 
-export async function PUT(request: Request, context: unknown) {
-  const { params } = context as { params: { id: string } };
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     await dbConnect();
     const body = (await request.json()) as Record<string, unknown>;
@@ -49,6 +54,10 @@ export async function PUT(request: Request, context: unknown) {
     if (typeof body.fullName === 'string') updateData.fullName = body.fullName;
     if (typeof body.email === 'string') updateData.email = body.email;
     if (typeof body.phone === 'string') updateData.phone = body.phone;
+    if (typeof body.dob === 'string') updateData.dob = new Date(body.dob);
+    if (typeof body.age === 'number') updateData.age = body.age;
+    if (typeof body.gender === 'string') updateData.gender = body.gender;
+    if (typeof body.bloodGroup === 'string') updateData.bloodGroup = body.bloodGroup;
     if (typeof body.specialization === 'string') updateData.specialization = body.specialization;
     if (typeof body.yearsOfExperience === 'number') updateData.yearsOfExperience = body.yearsOfExperience;
     if (typeof body.role === 'string') updateData.role = body.role;
@@ -60,15 +69,16 @@ export async function PUT(request: Request, context: unknown) {
     if (typeof body.profileImage === 'string') updateData.profileImage = body.profileImage;
     if (typeof body.status === 'string') updateData.status = body.status;
     if (typeof body.assignedClasses === 'number') updateData.assignedClasses = body.assignedClasses;
+    if (typeof body.badgeId === 'string' && body.badgeId.trim()) updateData.badgeId = body.badgeId.trim();
 
     if (body.email) {
-      const existingEmail = await SeniorTeacher.findOne({ email: body.email, _id: { $ne: params.id } });
+      const existingEmail = await SeniorTeacher.findOne({ email: body.email, _id: { $ne: id } });
       if (existingEmail) {
         return NextResponse.json({ error: 'Email already exists' }, { status: 409 });
       }
     }
 
-    const teacher = await SeniorTeacher.findByIdAndUpdate(params.id, updateData, { new: true });
+    const teacher = await SeniorTeacher.findByIdAndUpdate(id, updateData, { returnDocument: 'after' });
     if (!teacher) {
       return NextResponse.json({ error: 'Senior teacher not found' }, { status: 404 });
     }
@@ -77,9 +87,14 @@ export async function PUT(request: Request, context: unknown) {
       message: 'Senior teacher updated successfully',
       teacher: {
         id: teacher._id.toString(),
+        badgeId: teacher.badgeId,
         fullName: teacher.fullName,
         email: teacher.email,
         phone: teacher.phone,
+        dob: teacher.dob,
+        age: teacher.age,
+        gender: teacher.gender,
+        bloodGroup: teacher.bloodGroup,
         specialization: teacher.specialization,
         yearsOfExperience: teacher.yearsOfExperience,
         role: teacher.role,
@@ -101,11 +116,11 @@ export async function PUT(request: Request, context: unknown) {
   }
 }
 
-export async function DELETE(request: Request, context: unknown) {
-  const { params } = context as { params: { id: string } };
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     await dbConnect();
-    const teacher = await SeniorTeacher.findByIdAndDelete(params.id);
+    const teacher = await SeniorTeacher.findByIdAndDelete(id);
     if (!teacher) {
       return NextResponse.json({ error: 'Senior teacher not found' }, { status: 404 });
     }
